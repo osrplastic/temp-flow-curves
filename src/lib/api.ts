@@ -1,4 +1,3 @@
-
 import { Hono } from 'hono';
 import { z } from "zod";
 
@@ -87,6 +86,34 @@ const defaultProfiles: TemperatureProfile[] = [
       { x: 1, y: 0.8 }
     ],
     duration: 45,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'profile-4',
+    name: 'HDPE - 10mm',
+    description: '60 minutes cycle, max temp 155°C',
+    controlPoints: [
+      { x: 0, y: 0 },
+      { x: 0.3, y: 0.6, handleX: 0.15, handleY: 0.45 }, // Ramp up to 155°C
+      { x: 0.7, y: 0.6, handleX: 0.5, handleY: 0.6 },   // Hold at 155°C
+      { x: 1, y: 0.1 }                                 // Cool down
+    ],
+    duration: 60,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'profile-5',
+    name: 'MDPE - 2mm',
+    description: '10 minutes cycle, max temp 175°C',
+    controlPoints: [
+      { x: 0, y: 0 },
+      { x: 0.2, y: 0.67, handleX: 0.1, handleY: 0.5 },  // Fast ramp up to 175°C
+      { x: 0.7, y: 0.67, handleX: 0.45, handleY: 0.67 }, // Hold at 175°C
+      { x: 1, y: 0.1 }                                  // Rapid cool down
+    ],
+    duration: 10,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
