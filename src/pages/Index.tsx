@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
@@ -242,6 +243,15 @@ const Index = () => {
         </div>
       </div>
     );
+  }
+  
+  // Force a reinitialize of the storage to restore controllers if they're missing
+  if (controllers.length === 0 && !controllersLoading) {
+    // Clear the storage and reload the page to reinitialize
+    localStorage.removeItem('temp-controllers');
+    localStorage.removeItem('temp-heat-zones');
+    window.location.reload();
+    return null;
   }
   
   return (

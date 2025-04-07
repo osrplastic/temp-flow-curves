@@ -47,14 +47,15 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         )}
         
         <div className="space-y-1">
-          <BezierEditor
-            controlPoints={profile.controlPoints}
-            onChange={() => {}}
-            minTemp={minTemp}
-            maxTemp={maxTemp}
-            readonly
-            className="h-40"
-          />
+          <div className="h-40">
+            <BezierEditor
+              controlPoints={profile.controlPoints}
+              onChange={() => {}}
+              minTemp={minTemp}
+              maxTemp={maxTemp}
+              readonly
+            />
+          </div>
           <div className="flex justify-between text-xs">
             <span>Max: {maxProfileTemp}°C</span>
             <span>Duration: {profile.duration} min</span>
