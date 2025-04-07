@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import ControllerForm from '@/components/ControllerForm';
+import EditControllerDialog from '@/components/EditControllerDialog';
 import { 
   Card, 
   CardContent, 
@@ -33,6 +33,7 @@ const Index = () => {
   const [selectedController, setSelectedController] = useState<Controller | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [zoneOpenState, setZoneOpenState] = useState<Record<string, boolean>>({});
+  const [editControllerDialogOpen, setEditControllerDialogOpen] = useState(false);
   
   const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
     queryKey: ['controllers'],
@@ -77,6 +78,15 @@ const Index = () => {
       setControllers(prev => 
         prev.map(c => c.id === id ? updatedController : c)
       );
+      
+      if (editControllerDialogOpen) {
+        setEditControllerDialogOpen(false);
+        
+        toast({
+          title: "Controller Updated",
+          description: `${updatedController.name} has been updated`
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -230,6 +240,11 @@ const Index = () => {
     }
   };
   
+  const openEditControllerDialog = (controller: Controller) => {
+    setSelectedController(controller);
+    setEditControllerDialogOpen(true);
+  };
+  
   if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
@@ -320,6 +335,7 @@ const Index = () => {
                                 onUpdate={handleUpdateController}
                                 onStart={(id) => openProfileDialog(controller)}
                                 onStop={handleStopController}
+                                onEdit={openEditControllerDialog}
                               />
                             </div>
                           ))}
@@ -409,6 +425,19 @@ const Index = () => {
             zones={zones}
             defaultZoneId={selectedZoneId || undefined}
           />
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={editControllerDialogOpen} onOpenChange={setEditControllerDialogOpen}>
+        <DialogContent>
+          {selectedController && (
+            <EditControllerDialog
+              controller={selectedController}
+              zones={zones}
+              onSubmit={handleUpdateController}
+              onCancel={() => setEditControllerDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

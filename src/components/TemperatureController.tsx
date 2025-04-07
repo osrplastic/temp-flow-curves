@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { Controller, TemperatureProfile } from '@/lib/api';
 import { getTemperatureAtTime } from '@/lib/bezier';
-import { Play, Pause, RefreshCw, Info } from 'lucide-react';
+import { Play, Pause, RefreshCw, Info, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +16,7 @@ interface TemperatureControllerProps {
   onUpdate: (id: string, data: Partial<Controller>) => void;
   onStart: (id: string, profileId?: string) => void;
   onStop: (id: string) => void;
+  onEdit?: (controller: Controller) => void;
 }
 
 const TemperatureController: React.FC<TemperatureControllerProps> = ({ 
@@ -24,7 +24,8 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
   profiles, 
   onUpdate, 
   onStart, 
-  onStop 
+  onStop,
+  onEdit
 }) => {
   const [currentTemp, setCurrentTemp] = useState(controller.currentTemp);
   const [progress, setProgress] = useState(0);
@@ -103,12 +104,22 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(controller);
+    }
+  };
+  
   return (
     <Card className="w-full">
       <CardHeader className="p-3">
         <CardTitle className="flex justify-between items-center text-lg">
-          <div className="flex items-center">
+          <div 
+            className="flex items-center cursor-pointer hover:text-primary transition-colors group"
+            onClick={handleEdit}
+          >
             <span>{controller.name}</span>
+            <Pencil className="h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="flex items-center gap-2">
             <TooltipProvider>
