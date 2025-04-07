@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
@@ -245,13 +244,33 @@ const Index = () => {
     );
   }
   
-  // Force a reinitialize of the storage to restore controllers if they're missing
-  if (controllers.length === 0 && !controllersLoading) {
-    // Clear the storage and reload the page to reinitialize
-    localStorage.removeItem('temp-controllers');
-    localStorage.removeItem('temp-heat-zones');
-    window.location.reload();
-    return null;
+  const needsReinitialize = !controllersLoading && !zonesLoading && 
+                           (controllers.length === 0 || zones.length === 0);
+  
+  const [hasAttemptedReinit, setHasAttemptedReinit] = useState(false);
+  
+  useEffect(() => {
+    if (needsReinitialize && !hasAttemptedReinit) {
+      setHasAttemptedReinit(true);
+      localStorage.removeItem('temp-controllers');
+      localStorage.removeItem('temp-heat-zones');
+      localStorage.removeItem('temp-profiles');
+      window.location.reload();
+    }
+  }, [needsReinitialize, hasAttemptedReinit]);
+  
+  if (needsReinitialize) {
+    return (
+      <div className="container py-6 space-y-6">
+        <MainNav />
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-8 w-8 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+            <p className="text-muted-foreground">Reinitializing data...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   return (
