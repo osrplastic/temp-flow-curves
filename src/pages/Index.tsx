@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
@@ -32,6 +33,8 @@ const Index = () => {
   const [selectedController, setSelectedController] = useState<Controller | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [zoneOpenState, setZoneOpenState] = useState<Record<string, boolean>>({});
+  // IMPORTANT: Always declare all useState hooks at the top level, never conditionally
+  const [hasAttemptedReinit, setHasAttemptedReinit] = useState(false);
   
   const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
     queryKey: ['controllers'],
@@ -246,8 +249,6 @@ const Index = () => {
   
   const needsReinitialize = !controllersLoading && !zonesLoading && 
                            (controllers.length === 0 || zones.length === 0);
-  
-  const [hasAttemptedReinit, setHasAttemptedReinit] = useState(false);
   
   useEffect(() => {
     if (needsReinitialize && !hasAttemptedReinit) {
