@@ -49,6 +49,12 @@
   }
 }
 
+@layer utilities {
+  .stroke-dasharray-2 {
+    stroke-dasharray: 2;
+  }
+}
+
 @layer components {
   .bezier-control {
     @apply w-5 h-5 bg-primary rounded-full absolute cursor-move;
