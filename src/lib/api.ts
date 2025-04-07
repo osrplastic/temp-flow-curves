@@ -19,6 +19,12 @@ export type ControlPoint = {
   handleY?: number; // Bezier control point for y
 };
 
+export type HeatZone = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export type Controller = {
   id: string;
   name: string;
@@ -31,11 +37,13 @@ export type Controller = {
   currentProfile: string | null;
   isRunning: boolean;
   lastUpdated: string;
+  zoneId: string; // Added zoneId to associate controllers with zones
 };
 
 // Local storage keys
 const PROFILES_KEY = 'temp-controller-profiles';
 const CONTROLLERS_KEY = 'temp-controllers';
+const ZONES_KEY = 'temp-heat-zones';
 
 // Mock API server
 const app = new Hono();
@@ -83,6 +91,20 @@ const defaultProfiles: TemperatureProfile[] = [
   }
 ];
 
+// Default heat zones
+const defaultZones: HeatZone[] = [
+  {
+    id: 'zone-up',
+    name: 'Up Zone',
+    description: 'Top heat zone array'
+  },
+  {
+    id: 'zone-down',
+    name: 'Down Zone',
+    description: 'Bottom heat zone array'
+  }
+];
+
 // Default controllers
 const defaultControllers: Controller[] = [
   {
@@ -96,7 +118,8 @@ const defaultControllers: Controller[] = [
     updateInterval: 250,
     currentProfile: null,
     isRunning: false,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-up'
   },
   {
     id: 'controller-2',
@@ -109,7 +132,8 @@ const defaultControllers: Controller[] = [
     updateInterval: 500,
     currentProfile: null,
     isRunning: false,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-up'
   },
   {
     id: 'controller-3',
@@ -122,7 +146,8 @@ const defaultControllers: Controller[] = [
     updateInterval: 1000,
     currentProfile: null,
     isRunning: false,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-down'
   }
 ];
 
@@ -133,6 +158,9 @@ const initializeStorage = () => {
   }
   if (!localStorage.getItem(CONTROLLERS_KEY)) {
     localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(defaultControllers));
+  }
+  if (!localStorage.getItem(ZONES_KEY)) {
+    localStorage.setItem(ZONES_KEY, JSON.stringify(defaultZones));
   }
 };
 
@@ -271,6 +299,32 @@ app.delete('/api/profiles/:id', (c) => {
   return c.json({ success: true });
 });
 
+// API endpoints for zones
+app.get('/api/zones', (c) => {
+  const zones = getFromStorage<HeatZone>(ZONES_KEY);
+  return c.json(zones);
+});
+
+app.get('/api/zones/:id', (c) => {
+  const id = c.req.param('id');
+  const zones = getFromStorage<HeatZone>(ZONES_KEY);
+  const zone = zones.find(z => z.id === id);
+  
+  if (!zone) {
+    return c.json({ error: 'Zone not found' }, 404);
+  }
+  
+  return c.json(zone);
+});
+
+app.get('/api/zones/:id/controllers', (c) => {
+  const zoneId = c.req.param('id');
+  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const zoneControllers = controllers.filter(controller => controller.zoneId === zoneId);
+  
+  return c.json(zoneControllers);
+});
+
 // API endpoints for controllers
 app.get('/api/controllers', (c) => {
   const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
@@ -360,6 +414,7 @@ app.post('/api/controllers', async (c) => {
     targetTemp: z.number(),
     slaveId: z.number().int().positive(),
     updateInterval: z.number().int().positive(),
+    zoneId: z.string().min(1),
   });
   
   try {
@@ -377,7 +432,8 @@ app.post('/api/controllers', async (c) => {
       currentTemp: validated.targetTemp - 5 + Math.random() * 10, // Random start temp near target
       currentProfile: null,
       isRunning: false,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      zoneId: validated.zoneId
     };
     
     controllers.push(newController);
@@ -412,6 +468,23 @@ app.post('/api/controllers/:id/stop', (c) => {
 
 // Create API client for frontend use
 export const api = {
+  // Zones
+  getZones: async (): Promise<HeatZone[]> => {
+    const res = await app.request('/api/zones');
+    return res.json();
+  },
+  
+  getZone: async (id: string): Promise<HeatZone> => {
+    const res = await app.request(`/api/zones/${id}`);
+    if (!res.ok) throw new Error('Zone not found');
+    return res.json();
+  },
+  
+  getZoneControllers: async (zoneId: string): Promise<Controller[]> => {
+    const res = await app.request(`/api/zones/${zoneId}/controllers`);
+    return res.json();
+  },
+  
   // Profiles
   getProfiles: async (): Promise<TemperatureProfile[]> => {
     const res = await app.request('/api/profiles');

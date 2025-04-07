@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { getTemperatureAtTime } from '@/lib/bezier';
 import { Play, Pause, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 interface TemperatureControllerProps {
   controller: Controller;
@@ -30,35 +30,29 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   
-  // Find the active profile if one is set
   const activeProfile = controller.currentProfile 
     ? profiles.find(p => p.id === controller.currentProfile) 
     : null;
 
-  // Update temperature based on simulation
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (controller.isRunning) {
-      // If running with a profile
       if (activeProfile) {
-        setTotalTime(activeProfile.duration * 60); // convert minutes to seconds
+        setTotalTime(activeProfile.duration * 60);
         
         interval = setInterval(() => {
           setElapsedTime(prev => {
             const newElapsed = prev + 1;
             
-            // Calculate progress percentage
             const normalizedTime = newElapsed / (activeProfile.duration * 60);
             setProgress(normalizedTime * 100);
             
-            // If profile completed
             if (normalizedTime >= 1) {
               onStop(controller.id);
               return 0;
             }
             
-            // Calculate temperature from profile
             const newTemp = getTemperatureAtTime(
               activeProfile.controlPoints,
               normalizedTime,
@@ -66,24 +60,20 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
               controller.maxTemp
             );
             
-            // Update simulated temperature (with some randomness)
-            const randomFactor = (Math.random() * 0.4) - 0.2; // -0.2 to +0.2
+            const randomFactor = (Math.random() * 0.4) - 0.2;
             setCurrentTemp(Math.round((newTemp + randomFactor) * 10) / 10);
             
             return newElapsed;
           });
-        }, Math.max(200, controller.updateInterval)); // Use controller update interval but ensure at least 200ms
-      } 
-      // If running without a profile (just maintaining target temp)
-      else {
+        }, Math.max(200, controller.updateInterval));
+      } else {
         interval = setInterval(() => {
           setCurrentTemp(prev => {
             const diff = controller.targetTemp - prev;
-            // Move current temp closer to target with some randomness
             const step = Math.sign(diff) * (Math.min(Math.abs(diff), 0.3) + Math.random() * 0.2);
             return Math.round((prev + step) * 10) / 10;
           });
-        }, Math.max(200, controller.updateInterval)); // Use controller update interval but ensure at least 200ms
+        }, Math.max(200, controller.updateInterval));
       }
     }
     
@@ -93,12 +83,10 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
   }, [controller.isRunning, controller.id, controller.targetTemp, 
       controller.minTemp, controller.maxTemp, controller.updateInterval, activeProfile, onStop]);
   
-  // Update the controller when target temp changes
   const handleTargetTempChange = (value: number[]) => {
     onUpdate(controller.id, { targetTemp: value[0] });
   };
   
-  // Get temperature color based on current temperature
   const getTempColor = (temp: number) => {
     const range = controller.maxTemp - controller.minTemp;
     const ratio = (temp - controller.minTemp) / range;
@@ -108,7 +96,6 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
     return 'text-temp-hot';
   };
   
-  // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -119,7 +106,9 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>{controller.name}</span>
+          <div className="flex items-center">
+            <span>{controller.name}</span>
+          </div>
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>

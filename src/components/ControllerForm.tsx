@@ -14,7 +14,14 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form';
-import { Controller } from '@/lib/api';
+import { Controller, HeatZone } from '@/lib/api';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Form schema
 const formSchema = z.object({
@@ -24,6 +31,7 @@ const formSchema = z.object({
   targetTemp: z.coerce.number(),
   slaveId: z.coerce.number().int().positive({ message: 'Slave ID must be a positive integer' }),
   updateInterval: z.coerce.number().int().min(100, { message: 'Update interval must be at least 100ms' }),
+  zoneId: z.string({ required_error: 'Please select a heat zone' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -31,9 +39,11 @@ type FormData = z.infer<typeof formSchema>;
 interface ControllerFormProps {
   onSubmit: (data: Omit<Controller, 'id' | 'currentTemp' | 'currentProfile' | 'isRunning' | 'lastUpdated'>) => void;
   onCancel: () => void;
+  zones: HeatZone[];
+  defaultZoneId?: string;
 }
 
-const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) => {
+const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel, zones, defaultZoneId }) => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,6 +53,7 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
       targetTemp: 25,
       slaveId: 1,
       updateInterval: 250,
+      zoneId: defaultZoneId || (zones.length > 0 ? zones[0].id : ''),
     }
   });
   
@@ -73,7 +84,8 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
       maxTemp: data.maxTemp,
       targetTemp,
       slaveId: data.slaveId,
-      updateInterval: data.updateInterval
+      updateInterval: data.updateInterval,
+      zoneId: data.zoneId
     });
   };
   
@@ -89,6 +101,37 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
               <FormControl>
                 <Input placeholder="E.g., Fermentation Chamber" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="zoneId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Heat Zone</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a heat zone" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {zones.map((zone) => (
+                    <SelectItem key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Select which heat zone array this controller belongs to
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

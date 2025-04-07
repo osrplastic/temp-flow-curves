@@ -1,22 +1,37 @@
 
 import React, { useEffect, useState } from 'react';
-import { api, Controller, TemperatureProfile } from '@/lib/api';
+import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
 import MainNav from '@/components/MainNav';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import ControllerForm from '@/components/ControllerForm';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const Index = () => {
   const { toast } = useToast();
   const [controllers, setControllers] = useState<Controller[]>([]);
   const [profiles, setProfiles] = useState<TemperatureProfile[]>([]);
+  const [zones, setZones] = useState<HeatZone[]>([]);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [addControllerDialogOpen, setAddControllerDialogOpen] = useState(false);
   const [selectedController, setSelectedController] = useState<Controller | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [zoneOpenState, setZoneOpenState] = useState<Record<string, boolean>>({});
   
   // Fetch controllers
   const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
@@ -30,6 +45,23 @@ const Index = () => {
     queryFn: api.getProfiles
   });
   
+  // Fetch zones
+  const { data: zonesData, isLoading: zonesLoading } = useQuery({
+    queryKey: ['zones'],
+    queryFn: api.getZones
+  });
+  
+  // Initialize zone open state
+  useEffect(() => {
+    if (zonesData) {
+      const initialOpenState: Record<string, boolean> = {};
+      zonesData.forEach(zone => {
+        initialOpenState[zone.id] = true; // Start with all zones expanded
+      });
+      setZoneOpenState(initialOpenState);
+    }
+  }, [zonesData]);
+  
   // Update state when data is loaded
   useEffect(() => {
     if (controllersData) setControllers(controllersData);
@@ -38,6 +70,10 @@ const Index = () => {
   useEffect(() => {
     if (profilesData) setProfiles(profilesData);
   }, [profilesData]);
+  
+  useEffect(() => {
+    if (zonesData) setZones(zonesData);
+  }, [zonesData]);
   
   // Handle controller updates
   const handleUpdateController = async (id: string, data: Partial<Controller>) => {
@@ -141,8 +177,27 @@ const Index = () => {
     }
   };
   
+  // Group controllers by zone
+  const getControllersByZone = (zoneId: string) => {
+    return controllers.filter(controller => controller.zoneId === zoneId);
+  };
+  
+  // Toggle zone collapsible state
+  const toggleZoneOpen = (zoneId: string) => {
+    setZoneOpenState(prev => ({
+      ...prev,
+      [zoneId]: !prev[zoneId]
+    }));
+  };
+  
+  // Open add controller dialog with preselected zone
+  const openAddControllerWithZone = (zoneId: string) => {
+    setSelectedZoneId(zoneId);
+    setAddControllerDialogOpen(true);
+  };
+  
   // Loading state
-  if (controllersLoading || profilesLoading) {
+  if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
         <MainNav />
@@ -171,30 +226,83 @@ const Index = () => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {controllers.map(controller => (
-          <div key={controller.id} className="flex flex-col">
-            <TemperatureController 
-              controller={controller}
-              profiles={profiles}
-              onUpdate={handleUpdateController}
-              onStart={(id) => openProfileDialog(controller)}
-              onStop={handleStopController}
-            />
-          </div>
-        ))}
+      <div className="space-y-6">
+        {zones.map(zone => {
+          const zoneControllers = getControllersByZone(zone.id);
+          return (
+            <Card key={zone.id}>
+              <Collapsible open={zoneOpenState[zone.id]} onOpenChange={() => toggleZoneOpen(zone.id)}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>{zone.name}</CardTitle>
+                      {zone.description && (
+                        <CardDescription>{zone.description}</CardDescription>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAddControllerWithZone(zone.id);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add to {zone.name}
+                      </Button>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          {zoneOpenState[zone.id] ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                      {zoneControllers.map(controller => (
+                        <div key={controller.id} className="flex flex-col">
+                          <TemperatureController 
+                            controller={controller}
+                            profiles={profiles}
+                            onUpdate={handleUpdateController}
+                            onStart={(id) => openProfileDialog(controller)}
+                            onStop={handleStopController}
+                          />
+                        </div>
+                      ))}
+                      
+                      {zoneControllers.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center p-6 border border-dashed rounded-lg border-muted">
+                          <p className="text-muted-foreground mb-4">No controllers in this zone</p>
+                          <Button 
+                            onClick={() => openAddControllerWithZone(zone.id)}
+                            variant="outline"
+                            className="gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Controller
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          );
+        })}
         
-        {controllers.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg border-muted">
-            <p className="text-muted-foreground mb-4">No controllers available</p>
-            <Button 
-              onClick={() => setAddControllerDialogOpen(true)}
-              variant="outline"
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Controller
-            </Button>
+        {zones.length === 0 && (
+          <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg border-muted">
+            <p className="text-muted-foreground mb-4">No heat zones available</p>
           </div>
         )}
       </div>
@@ -253,6 +361,8 @@ const Index = () => {
           <ControllerForm 
             onSubmit={handleCreateController}
             onCancel={() => setAddControllerDialogOpen(false)}
+            zones={zones}
+            defaultZoneId={selectedZoneId || undefined}
           />
         </DialogContent>
       </Dialog>
