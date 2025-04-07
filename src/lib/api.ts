@@ -26,6 +26,8 @@ export type Controller = {
   targetTemp: number;
   minTemp: number;
   maxTemp: number;
+  slaveId: number;
+  updateInterval: number; // in ms
   currentProfile: string | null;
   isRunning: boolean;
   lastUpdated: string;
@@ -90,6 +92,8 @@ const defaultControllers: Controller[] = [
     targetTemp: 75,
     minTemp: 0,
     maxTemp: 100,
+    slaveId: 1,
+    updateInterval: 250,
     currentProfile: null,
     isRunning: false,
     lastUpdated: new Date().toISOString()
@@ -101,6 +105,8 @@ const defaultControllers: Controller[] = [
     targetTemp: 65,
     minTemp: 0,
     maxTemp: 150,
+    slaveId: 2,
+    updateInterval: 500,
     currentProfile: null,
     isRunning: false,
     lastUpdated: new Date().toISOString()
@@ -112,6 +118,8 @@ const defaultControllers: Controller[] = [
     targetTemp: 50,
     minTemp: 0,
     maxTemp: 120,
+    slaveId: 3,
+    updateInterval: 1000,
     currentProfile: null,
     isRunning: false,
     lastUpdated: new Date().toISOString()
@@ -350,6 +358,8 @@ app.post('/api/controllers', async (c) => {
     minTemp: z.number(),
     maxTemp: z.number(),
     targetTemp: z.number(),
+    slaveId: z.number().int().positive(),
+    updateInterval: z.number().int().positive(),
   });
   
   try {
@@ -362,6 +372,8 @@ app.post('/api/controllers', async (c) => {
       minTemp: validated.minTemp,
       maxTemp: validated.maxTemp,
       targetTemp: validated.targetTemp,
+      slaveId: validated.slaveId,
+      updateInterval: validated.updateInterval,
       currentTemp: validated.targetTemp - 5 + Math.random() * 10, // Random start temp near target
       currentProfile: null,
       isRunning: false,

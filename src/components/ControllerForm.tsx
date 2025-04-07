@@ -12,6 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Controller } from '@/lib/api';
 
@@ -21,6 +22,8 @@ const formSchema = z.object({
   minTemp: z.coerce.number().min(-50, { message: 'Minimum temperature must be at least -50°C' }),
   maxTemp: z.coerce.number().min(0, { message: 'Maximum temperature must be at least 0°C' }),
   targetTemp: z.coerce.number(),
+  slaveId: z.coerce.number().int().positive({ message: 'Slave ID must be a positive integer' }),
+  updateInterval: z.coerce.number().int().min(100, { message: 'Update interval must be at least 100ms' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -38,6 +41,8 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
       minTemp: 0,
       maxTemp: 100,
       targetTemp: 25,
+      slaveId: 1,
+      updateInterval: 250,
     }
   });
   
@@ -66,7 +71,9 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
       name: data.name,
       minTemp: data.minTemp,
       maxTemp: data.maxTemp,
-      targetTemp
+      targetTemp,
+      slaveId: data.slaveId,
+      updateInterval: data.updateInterval
     });
   };
   
@@ -130,6 +137,42 @@ const ControllerForm: React.FC<ControllerFormProps> = ({ onSubmit, onCancel }) =
             </FormItem>
           )}
         />
+        
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="slaveId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Slave ID (Modbus)</FormLabel>
+                <FormControl>
+                  <Input type="number" min={1} step={1} {...field} />
+                </FormControl>
+                <FormDescription>
+                  Unique ID for Modbus communication
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="updateInterval"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Update Interval (ms)</FormLabel>
+                <FormControl>
+                  <Input type="number" min={100} step={50} {...field} />
+                </FormControl>
+                <FormDescription>
+                  Time between sensor readings
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>

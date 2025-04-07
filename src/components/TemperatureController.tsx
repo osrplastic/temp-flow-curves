@@ -6,8 +6,9 @@ import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 import { Controller, TemperatureProfile } from '@/lib/api';
 import { getTemperatureAtTime } from '@/lib/bezier';
-import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Play, Pause, RefreshCw, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TemperatureControllerProps {
   controller: Controller;
@@ -71,7 +72,7 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
             
             return newElapsed;
           });
-        }, 1000);
+        }, Math.max(200, controller.updateInterval)); // Use controller update interval but ensure at least 200ms
       } 
       // If running without a profile (just maintaining target temp)
       else {
@@ -82,7 +83,7 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
             const step = Math.sign(diff) * (Math.min(Math.abs(diff), 0.3) + Math.random() * 0.2);
             return Math.round((prev + step) * 10) / 10;
           });
-        }, 1000);
+        }, Math.max(200, controller.updateInterval)); // Use controller update interval but ensure at least 200ms
       }
     }
     
@@ -90,7 +91,7 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
       if (interval) clearInterval(interval);
     };
   }, [controller.isRunning, controller.id, controller.targetTemp, 
-      controller.minTemp, controller.maxTemp, activeProfile, onStop]);
+      controller.minTemp, controller.maxTemp, controller.updateInterval, activeProfile, onStop]);
   
   // Update the controller when target temp changes
   const handleTargetTempChange = (value: number[]) => {
@@ -119,9 +120,25 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span>{controller.name}</span>
-          {controller.isRunning && (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          )}
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center text-xs text-muted-foreground">
+                    <Info className="h-3.5 w-3.5 mr-1" />
+                    ID: {controller.slaveId} / {controller.updateInterval}ms
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Modbus Slave ID: {controller.slaveId}</p>
+                  <p>Update Interval: {controller.updateInterval}ms</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {controller.isRunning && (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
