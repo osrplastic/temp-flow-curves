@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { api, TemperatureProfile } from '@/lib/api';
 import MainNav from '@/components/MainNav';
@@ -168,7 +167,7 @@ const Profiles = () => {
               minTemp={minTemp}
               maxTemp={maxTemp}
               onEdit={openEditDialog}
-              onDelete={openDeleteDialog}
+              onDelete={(id) => openDeleteDialog(profiles.find(p => p.id === id)!)}
               onApply={handleApplyProfile}
             />
           ))}

@@ -1,4 +1,3 @@
-
 import { Hono } from 'hono';
 import { z } from "zod";
 
@@ -181,7 +180,15 @@ app.post('/api/profiles', async (c) => {
     
     const newProfile: TemperatureProfile = {
       id: `profile-${Date.now()}`,
-      ...validated,
+      name: validated.name,
+      description: validated.description,
+      controlPoints: validated.controlPoints.map(point => ({
+        x: point.x,
+        y: point.y,
+        handleX: point.handleX,
+        handleY: point.handleY
+      })),
+      duration: validated.duration,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -223,7 +230,15 @@ app.put('/api/profiles/:id', async (c) => {
     
     profiles[index] = {
       ...profiles[index],
-      ...validated,
+      name: validated.name,
+      description: validated.description,
+      controlPoints: validated.controlPoints.map(point => ({
+        x: point.x,
+        y: point.y,
+        handleX: point.handleX,
+        handleY: point.handleY
+      })),
+      duration: validated.duration,
       updatedAt: new Date().toISOString()
     };
     

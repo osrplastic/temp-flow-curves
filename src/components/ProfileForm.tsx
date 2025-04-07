@@ -60,7 +60,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   
   const handleSubmit = (data: FormData) => {
     onSubmit({
-      ...data,
+      name: data.name,
+      description: data.description,
+      duration: data.duration,
       controlPoints
     });
   };
