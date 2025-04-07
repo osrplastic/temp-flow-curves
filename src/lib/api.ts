@@ -1,3 +1,4 @@
+
 import { Hono } from 'hono';
 import { z } from "zod";
 
@@ -107,6 +108,7 @@ const defaultZones: HeatZone[] = [
 
 // Default controllers
 const defaultControllers: Controller[] = [
+  // Up Zone Controllers (4)
   {
     id: 'controller-1',
     name: 'Main Chamber',
@@ -123,7 +125,7 @@ const defaultControllers: Controller[] = [
   },
   {
     id: 'controller-2',
-    name: 'Secondary Zone',
+    name: 'Secondary Chamber',
     currentTemp: 22,
     targetTemp: 65,
     minTemp: 0,
@@ -137,13 +139,85 @@ const defaultControllers: Controller[] = [
   },
   {
     id: 'controller-3',
-    name: 'Auxiliary Heater',
+    name: 'Tertiary Chamber',
+    currentTemp: 30,
+    targetTemp: 80,
+    minTemp: 10,
+    maxTemp: 120,
+    slaveId: 3,
+    updateInterval: 300,
+    currentProfile: null,
+    isRunning: false,
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-up'
+  },
+  {
+    id: 'controller-4',
+    name: 'Auxiliary Up',
+    currentTemp: 28,
+    targetTemp: 70,
+    minTemp: 5,
+    maxTemp: 110,
+    slaveId: 4,
+    updateInterval: 750,
+    currentProfile: null,
+    isRunning: false,
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-up'
+  },
+  
+  // Down Zone Controllers (4)
+  {
+    id: 'controller-5',
+    name: 'Primary Lower',
     currentTemp: 18,
     targetTemp: 50,
     minTemp: 0,
     maxTemp: 120,
-    slaveId: 3,
+    slaveId: 5,
     updateInterval: 1000,
+    currentProfile: null,
+    isRunning: false,
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-down'
+  },
+  {
+    id: 'controller-6',
+    name: 'Secondary Lower',
+    currentTemp: 20,
+    targetTemp: 55,
+    minTemp: 5,
+    maxTemp: 90,
+    slaveId: 6,
+    updateInterval: 400,
+    currentProfile: null,
+    isRunning: false,
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-down'
+  },
+  {
+    id: 'controller-7',
+    name: 'Tertiary Lower',
+    currentTemp: 15,
+    targetTemp: 45,
+    minTemp: 0,
+    maxTemp: 80,
+    slaveId: 7,
+    updateInterval: 600,
+    currentProfile: null,
+    isRunning: false,
+    lastUpdated: new Date().toISOString(),
+    zoneId: 'zone-down'
+  },
+  {
+    id: 'controller-8',
+    name: 'Auxiliary Down',
+    currentTemp: 23,
+    targetTemp: 60,
+    minTemp: 10,
+    maxTemp: 100,
+    slaveId: 8,
+    updateInterval: 350,
     currentProfile: null,
     isRunning: false,
     lastUpdated: new Date().toISOString(),
