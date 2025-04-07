@@ -341,6 +341,42 @@ app.post('/api/controllers/:id/start', async (c) => {
   return c.json(controllers[index]);
 });
 
+app.post('/api/controllers', async (c) => {
+  const data = await c.req.json();
+  
+  // Validation schema
+  const controllerSchema = z.object({
+    name: z.string().min(1),
+    minTemp: z.number(),
+    maxTemp: z.number(),
+    targetTemp: z.number(),
+  });
+  
+  try {
+    const validated = controllerSchema.parse(data);
+    const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+    
+    const newController: Controller = {
+      id: `controller-${Date.now()}`,
+      name: validated.name,
+      minTemp: validated.minTemp,
+      maxTemp: validated.maxTemp,
+      targetTemp: validated.targetTemp,
+      currentTemp: validated.targetTemp - 5 + Math.random() * 10, // Random start temp near target
+      currentProfile: null,
+      isRunning: false,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    controllers.push(newController);
+    saveToStorage(CONTROLLERS_KEY, controllers);
+    
+    return c.json(newController, 201);
+  } catch (error) {
+    return c.json({ error: 'Invalid controller data' }, 400);
+  }
+});
+
 app.post('/api/controllers/:id/stop', (c) => {
   const id = c.req.param('id');
   
@@ -440,6 +476,16 @@ export const api = {
       method: 'POST'
     });
     if (!res.ok) throw new Error('Failed to stop controller');
+    return res.json();
+  },
+  
+  createController: async (controller: Omit<Controller, 'id' | 'currentTemp' | 'currentProfile' | 'isRunning' | 'lastUpdated'>): Promise<Controller> => {
+    const res = await app.request('/api/controllers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(controller)
+    });
+    if (!res.ok) throw new Error('Failed to create controller');
     return res.json();
   }
 };

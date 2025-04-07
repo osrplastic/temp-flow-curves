@@ -7,16 +7,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+import ControllerForm from '@/components/ControllerForm';
 
 const Index = () => {
   const { toast } = useToast();
   const [controllers, setControllers] = useState<Controller[]>([]);
   const [profiles, setProfiles] = useState<TemperatureProfile[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [addControllerDialogOpen, setAddControllerDialogOpen] = useState(false);
   const [selectedController, setSelectedController] = useState<Controller | null>(null);
   
   // Fetch controllers
-  const { data: controllersData, isLoading: controllersLoading } = useQuery({
+  const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
     queryKey: ['controllers'],
     queryFn: api.getControllers
   });
@@ -99,7 +102,7 @@ const Index = () => {
   // Open profile selection dialog
   const openProfileDialog = (controller: Controller) => {
     setSelectedController(controller);
-    setDialogOpen(true);
+    setProfileDialogOpen(true);
   };
   
   // Apply profile to controller
@@ -108,11 +111,31 @@ const Index = () => {
     
     try {
       await handleStartController(selectedController.id, profileId);
-      setDialogOpen(false);
+      setProfileDialogOpen(false);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to apply profile",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Create a new controller
+  const handleCreateController = async (data: Omit<Controller, 'id' | 'currentTemp' | 'currentProfile' | 'isRunning' | 'lastUpdated'>) => {
+    try {
+      await api.createController(data);
+      refetchControllers();
+      setAddControllerDialogOpen(false);
+      
+      toast({
+        title: "Controller Created",
+        description: `${data.name} has been created`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create controller",
         variant: "destructive"
       });
     }
@@ -137,6 +160,17 @@ const Index = () => {
     <div className="container py-6 space-y-6">
       <MainNav />
       
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Temperature Controllers</h1>
+        <Button 
+          onClick={() => setAddControllerDialogOpen(true)}
+          className="gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Controller
+        </Button>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {controllers.map(controller => (
           <div key={controller.id} className="flex flex-col">
@@ -149,10 +183,24 @@ const Index = () => {
             />
           </div>
         ))}
+        
+        {controllers.length === 0 && (
+          <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg border-muted">
+            <p className="text-muted-foreground mb-4">No controllers available</p>
+            <Button 
+              onClick={() => setAddControllerDialogOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Controller
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Profile selection dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Select Temperature Profile</DialogTitle>
@@ -174,7 +222,7 @@ const Index = () => {
             <div className="mt-2 flex justify-between items-center">
               <Button 
                 variant="outline" 
-                onClick={() => setDialogOpen(false)}
+                onClick={() => setProfileDialogOpen(false)}
               >
                 Cancel
               </Button>
@@ -184,7 +232,7 @@ const Index = () => {
                 onClick={() => {
                   if (selectedController) {
                     handleStartController(selectedController.id);
-                    setDialogOpen(false);
+                    setProfileDialogOpen(false);
                   }
                 }}
               >
@@ -192,6 +240,20 @@ const Index = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add controller dialog */}
+      <Dialog open={addControllerDialogOpen} onOpenChange={setAddControllerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Temperature Controller</DialogTitle>
+          </DialogHeader>
+          
+          <ControllerForm 
+            onSubmit={handleCreateController}
+            onCancel={() => setAddControllerDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>
