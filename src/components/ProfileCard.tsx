@@ -6,6 +6,13 @@ import { TemperatureProfile } from '@/lib/api';
 import BezierEditor from './BezierEditor';
 import { Edit, Trash2, Play } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ProfileCardProps {
   profile: TemperatureProfile;
@@ -14,6 +21,8 @@ interface ProfileCardProps {
   onEdit: (profile: TemperatureProfile) => void;
   onDelete: (id: string) => void;
   onApply: (id: string) => void;
+  zones?: { id: string, name: string }[];
+  onApplyToZone?: (profileId: string, zoneId: string) => void;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -22,7 +31,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   maxTemp,
   onEdit,
   onDelete,
-  onApply
+  onApply,
+  zones,
+  onApplyToZone
 }) => {
   return (
     <Card className="w-full">
@@ -51,6 +62,24 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         <p className="text-xs text-muted-foreground">
           Updated {formatDistanceToNow(new Date(profile.updatedAt), { addSuffix: true })}
         </p>
+        
+        {zones && zones.length > 0 && onApplyToZone && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Apply to zone:</p>
+            <Select onValueChange={(zoneId) => onApplyToZone(profile.id, zoneId)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select zone" />
+              </SelectTrigger>
+              <SelectContent>
+                {zones.map((zone) => (
+                  <SelectItem key={zone.id} value={zone.id}>
+                    {zone.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between gap-2">
         <Button 

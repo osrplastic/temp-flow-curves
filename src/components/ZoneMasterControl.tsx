@@ -3,19 +3,31 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { HeatZone, Controller } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { HeatZone, Controller, TemperatureProfile } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Play } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
   controllers: Controller[];
+  profiles?: TemperatureProfile[];
   onUpdateAll: (zoneId: string, targetTemp: number) => void;
+  onApplyProfileToZone?: (zoneId: string, profileId: string) => void;
 }
 
 const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({ 
   zone, 
   controllers,
-  onUpdateAll
+  profiles,
+  onUpdateAll,
+  onApplyProfileToZone
 }) => {
   const [targetTemp, setTargetTemp] = useState(50);
   const [inputValue, setInputValue] = useState('50');
@@ -113,6 +125,30 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
             />
           </div>
         </div>
+        
+        {profiles && profiles.length > 0 && onApplyProfileToZone && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Apply profile to all controllers:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <Play className="h-3 w-3" />
+                  Profile <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {profiles.map(profile => (
+                  <DropdownMenuItem 
+                    key={profile.id}
+                    onClick={() => onApplyProfileToZone(zone.id, profile.id)}
+                  >
+                    {profile.name} ({profile.duration} min)
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

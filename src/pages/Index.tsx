@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
@@ -205,6 +206,30 @@ const Index = () => {
     }
   };
   
+  const handleApplyProfileToZone = async (zoneId: string, profileId: string) => {
+    try {
+      const zoneControllers = controllers.filter(c => c.zoneId === zoneId);
+      const profileName = profiles.find(p => p.id === profileId)?.name || 'Selected profile';
+      
+      for (const controller of zoneControllers) {
+        await api.startController(controller.id, profileId);
+      }
+      
+      refetchControllers();
+      
+      toast({
+        title: "Profile Applied to Zone",
+        description: `${profileName} is now running on all controllers in ${zones.find(z => z.id === zoneId)?.name || 'zone'}`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to apply profile to zone",
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
@@ -279,7 +304,9 @@ const Index = () => {
                         <ZoneMasterControl 
                           zone={zone} 
                           controllers={zoneControllers}
+                          profiles={profiles}
                           onUpdateAll={handleUpdateAllInZone}
+                          onApplyProfileToZone={handleApplyProfileToZone}
                         />
                       </div>
                       
