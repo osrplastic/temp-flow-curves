@@ -3,25 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { HeatZone, Controller, TemperatureProfile } from '@/lib/api';
+import { HeatZone, Controller } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
   controllers: Controller[];
-  profiles: TemperatureProfile[];
   onUpdateAll: (zoneId: string, targetTemp: number) => void;
-  onApplyProfile: (zoneId: string, profileId: string) => void;
 }
 
 const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({ 
   zone, 
   controllers,
-  profiles,
-  onUpdateAll,
-  onApplyProfile
+  onUpdateAll
 }) => {
   const [targetTemp, setTargetTemp] = useState(50);
   const [inputValue, setInputValue] = useState('50');
@@ -78,10 +72,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     if (ratio <= 0.66) return 'text-amber-400';
     return 'text-red-400';
   };
-
-  const handleApplyProfile = (profileId: string) => {
-    onApplyProfile(zone.id, profileId);
-  };
   
   return (
     <Card className="w-full">
@@ -122,29 +112,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
               className="font-mono"
             />
           </div>
-        </div>
-
-        <div className="mt-4">
-          <h3 className="text-sm font-medium mb-2">Temperature Profiles</h3>
-          <ScrollArea className="h-[240px] pr-2">
-            <div className="space-y-2">
-              {profiles.map(profile => (
-                <Button 
-                  key={profile.id}
-                  variant="outline"
-                  className="w-full justify-start text-left"
-                  onClick={() => handleApplyProfile(profile.id)}
-                >
-                  <div>
-                    <div className="font-medium">{profile.name}</div>
-                    <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                      {profile.description}
-                    </div>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          </ScrollArea>
         </div>
       </CardContent>
     </Card>

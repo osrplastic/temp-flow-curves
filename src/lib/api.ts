@@ -1,3 +1,4 @@
+
 import { Hono } from 'hono';
 import { z } from "zod";
 
@@ -88,34 +89,6 @@ const defaultProfiles: TemperatureProfile[] = [
     duration: 45,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'profile-4',
-    name: 'HDPE - 10mm',
-    description: '60 minutes cycle, max temp 155°C',
-    controlPoints: [
-      { x: 0, y: 0 },
-      { x: 0.3, y: 0.6, handleX: 0.15, handleY: 0.45 }, // Ramp up to 155°C
-      { x: 0.7, y: 0.6, handleX: 0.5, handleY: 0.6 },   // Hold at 155°C
-      { x: 1, y: 0.1 }                                 // Cool down
-    ],
-    duration: 60,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'profile-5',
-    name: 'MDPE - 2mm',
-    description: '10 minutes cycle, max temp 175°C',
-    controlPoints: [
-      { x: 0, y: 0 },
-      { x: 0.2, y: 0.67, handleX: 0.1, handleY: 0.5 },  // Fast ramp up to 175°C
-      { x: 0.7, y: 0.67, handleX: 0.45, handleY: 0.67 }, // Hold at 175°C
-      { x: 1, y: 0.1 }                                  // Rapid cool down
-    ],
-    duration: 10,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
   }
 ];
 
@@ -141,8 +114,8 @@ const defaultControllers: Controller[] = [
     name: 'Main Chamber',
     currentTemp: 25,
     targetTemp: 75,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 0,
+    maxTemp: 100,
     slaveId: 1,
     updateInterval: 250,
     currentProfile: null,
@@ -155,8 +128,8 @@ const defaultControllers: Controller[] = [
     name: 'Secondary Chamber',
     currentTemp: 22,
     targetTemp: 65,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 0,
+    maxTemp: 150,
     slaveId: 2,
     updateInterval: 500,
     currentProfile: null,
@@ -170,7 +143,7 @@ const defaultControllers: Controller[] = [
     currentTemp: 30,
     targetTemp: 80,
     minTemp: 10,
-    maxTemp: 260,
+    maxTemp: 120,
     slaveId: 3,
     updateInterval: 300,
     currentProfile: null,
@@ -183,8 +156,8 @@ const defaultControllers: Controller[] = [
     name: 'Auxiliary Up',
     currentTemp: 28,
     targetTemp: 70,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 5,
+    maxTemp: 110,
     slaveId: 4,
     updateInterval: 750,
     currentProfile: null,
@@ -199,8 +172,8 @@ const defaultControllers: Controller[] = [
     name: 'Primary Lower',
     currentTemp: 18,
     targetTemp: 50,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 0,
+    maxTemp: 120,
     slaveId: 5,
     updateInterval: 1000,
     currentProfile: null,
@@ -213,8 +186,8 @@ const defaultControllers: Controller[] = [
     name: 'Secondary Lower',
     currentTemp: 20,
     targetTemp: 55,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 5,
+    maxTemp: 90,
     slaveId: 6,
     updateInterval: 400,
     currentProfile: null,
@@ -227,8 +200,8 @@ const defaultControllers: Controller[] = [
     name: 'Tertiary Lower',
     currentTemp: 15,
     targetTemp: 45,
-    minTemp: 10,
-    maxTemp: 260,
+    minTemp: 0,
+    maxTemp: 80,
     slaveId: 7,
     updateInterval: 600,
     currentProfile: null,
@@ -242,7 +215,7 @@ const defaultControllers: Controller[] = [
     currentTemp: 23,
     targetTemp: 60,
     minTemp: 10,
-    maxTemp: 260,
+    maxTemp: 100,
     slaveId: 8,
     updateInterval: 350,
     currentProfile: null,
