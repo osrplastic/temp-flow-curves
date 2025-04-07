@@ -205,6 +205,31 @@ const Index = () => {
     }
   };
   
+  const handleApplyProfileToZone = async (zoneId: string, profileId: string) => {
+    try {
+      const zoneControllers = controllers.filter(c => c.zoneId === zoneId);
+      
+      for (const controller of zoneControllers) {
+        await api.startController(controller.id, profileId);
+      }
+      
+      refetchControllers();
+      
+      const profile = profiles.find(p => p.id === profileId);
+      
+      toast({
+        title: "Profile Applied to Zone",
+        description: `Applied '${profile?.name}' to all controllers in ${zones.find(z => z.id === zoneId)?.name}`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to apply profile to zone controllers",
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
@@ -279,7 +304,9 @@ const Index = () => {
                         <ZoneMasterControl 
                           zone={zone} 
                           controllers={zoneControllers}
+                          profiles={profiles}
                           onUpdateAll={handleUpdateAllInZone}
+                          onApplyProfile={handleApplyProfileToZone}
                         />
                       </div>
                       
