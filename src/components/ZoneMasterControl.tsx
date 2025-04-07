@@ -100,6 +100,14 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     return 'bg-red-600';
   };
   
+  // Map for consistent controller positions
+  const controllerPositionMap = [
+    { position: 'Top-Front', label: 'Nr.1' },
+    { position: 'Bottom-Front', label: 'Nr.2' },
+    { position: 'Top-Back', label: 'Nr.3' },
+    { position: 'Bottom-Back', label: 'Nr.4' }
+  ];
+  
   return (
     <Card className="w-full">
       <CardHeader className="p-4">
@@ -120,33 +128,38 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
               <span className="text-xs">{zone.name} Elements</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-2">
-              {Array.from({ length: Math.min(4, controllers.length) }).map((_, index) => (
-                <div 
-                  key={index} 
-                  className={cn(
-                    "h-8 rounded-md transition-colors duration-300 flex items-center justify-center text-xs font-medium text-white shadow-inner",
-                    getHeatIntensity(index)
-                  )}
-                >
-                  {controllers[index]?.name.split(' ')[0]}
-                </div>
-              ))}
-            </div>
-            {controllers.length > 4 && (
-              <div className="grid grid-cols-2 gap-2">
-                {Array.from({ length: Math.min(4, controllers.length - 4) }).map((_, index) => (
+              {controllerPositionMap.slice(0, 2).map((pos, index) => {
+                const controller = controllers[index];
+                return (
                   <div 
-                    key={index + 4} 
+                    key={index} 
                     className={cn(
                       "h-8 rounded-md transition-colors duration-300 flex items-center justify-center text-xs font-medium text-white shadow-inner",
-                      getHeatIntensity(index + 4)
+                      controller ? getHeatIntensity(index) : "bg-gray-200"
                     )}
                   >
-                    {controllers[index + 4]?.name.split(' ')[0]}
+                    {pos.position} - {pos.label}
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {controllerPositionMap.slice(2, 4).map((pos, index) => {
+                const controllerIndex = index + 2;
+                const controller = controllers[controllerIndex];
+                return (
+                  <div 
+                    key={controllerIndex} 
+                    className={cn(
+                      "h-8 rounded-md transition-colors duration-300 flex items-center justify-center text-xs font-medium text-white shadow-inner",
+                      controller ? getHeatIntensity(controllerIndex) : "bg-gray-200"
+                    )}
+                  >
+                    {pos.position} - {pos.label}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
         
