@@ -1,0 +1,188 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
+import { Controller, TemperatureProfile } from '@/lib/api';
+import { getTemperatureAtTime } from '@/lib/bezier';
+import { Play, Pause, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface TemperatureControllerProps {
+  controller: Controller;
+  profiles: TemperatureProfile[];
+  onUpdate: (id: string, data: Partial<Controller>) => void;
+  onStart: (id: string, profileId?: string) => void;
+  onStop: (id: string) => void;
+}
+
+const TemperatureController: React.FC<TemperatureControllerProps> = ({ 
+  controller, 
+  profiles, 
+  onUpdate, 
+  onStart, 
+  onStop 
+}) => {
+  const [currentTemp, setCurrentTemp] = useState(controller.currentTemp);
+  const [progress, setProgress] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
+  
+  // Find the active profile if one is set
+  const activeProfile = controller.currentProfile 
+    ? profiles.find(p => p.id === controller.currentProfile) 
+    : null;
+
+  // Update temperature based on simulation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (controller.isRunning) {
+      // If running with a profile
+      if (activeProfile) {
+        setTotalTime(activeProfile.duration * 60); // convert minutes to seconds
+        
+        interval = setInterval(() => {
+          setElapsedTime(prev => {
+            const newElapsed = prev + 1;
+            
+            // Calculate progress percentage
+            const normalizedTime = newElapsed / (activeProfile.duration * 60);
+            setProgress(normalizedTime * 100);
+            
+            // If profile completed
+            if (normalizedTime >= 1) {
+              onStop(controller.id);
+              return 0;
+            }
+            
+            // Calculate temperature from profile
+            const newTemp = getTemperatureAtTime(
+              activeProfile.controlPoints,
+              normalizedTime,
+              controller.minTemp,
+              controller.maxTemp
+            );
+            
+            // Update simulated temperature (with some randomness)
+            const randomFactor = (Math.random() * 0.4) - 0.2; // -0.2 to +0.2
+            setCurrentTemp(Math.round((newTemp + randomFactor) * 10) / 10);
+            
+            return newElapsed;
+          });
+        }, 1000);
+      } 
+      // If running without a profile (just maintaining target temp)
+      else {
+        interval = setInterval(() => {
+          setCurrentTemp(prev => {
+            const diff = controller.targetTemp - prev;
+            // Move current temp closer to target with some randomness
+            const step = Math.sign(diff) * (Math.min(Math.abs(diff), 0.3) + Math.random() * 0.2);
+            return Math.round((prev + step) * 10) / 10;
+          });
+        }, 1000);
+      }
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [controller.isRunning, controller.id, controller.targetTemp, 
+      controller.minTemp, controller.maxTemp, activeProfile, onStop]);
+  
+  // Update the controller when target temp changes
+  const handleTargetTempChange = (value: number[]) => {
+    onUpdate(controller.id, { targetTemp: value[0] });
+  };
+  
+  // Get temperature color based on current temperature
+  const getTempColor = (temp: number) => {
+    const range = controller.maxTemp - controller.minTemp;
+    const ratio = (temp - controller.minTemp) / range;
+    
+    if (ratio <= 0.33) return 'text-temp-cold';
+    if (ratio <= 0.66) return 'text-temp-warm';
+    return 'text-temp-hot';
+  };
+  
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex justify-between items-center">
+          <span>{controller.name}</span>
+          {controller.isRunning && (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-center">
+          <div className={cn(
+            "temperature-display", 
+            getTempColor(currentTemp)
+          )}>
+            {currentTemp.toFixed(1)}°C
+          </div>
+        </div>
+        
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm">
+            <span>Target: {controller.targetTemp}°C</span>
+            <span className="text-xs text-muted-foreground">
+              Range: {controller.minTemp}°C - {controller.maxTemp}°C
+            </span>
+          </div>
+          <Slider 
+            defaultValue={[controller.targetTemp]} 
+            min={controller.minTemp} 
+            max={controller.maxTemp} 
+            step={1}
+            onValueCommit={handleTargetTempChange}
+            disabled={controller.isRunning && !!activeProfile}
+          />
+        </div>
+        
+        {controller.isRunning && activeProfile && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span>Profile: {activeProfile.name}</span>
+              <span>{formatTime(elapsedTime)} / {formatTime(totalTime)}</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        {!controller.isRunning ? (
+          <Button 
+            className="flex-1 gap-2" 
+            onClick={() => onStart(controller.id)}
+          >
+            <Play className="h-4 w-4" />
+            Start
+          </Button>
+        ) : (
+          <Button 
+            className="flex-1 gap-2" 
+            variant="destructive" 
+            onClick={() => onStop(controller.id)}
+          >
+            <Pause className="h-4 w-4" />
+            Stop
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default TemperatureController;
