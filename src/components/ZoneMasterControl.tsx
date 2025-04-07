@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Play } from 'lucide-react';
+import { ChevronDown, Play, Thermometer } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
@@ -84,6 +84,21 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     if (ratio <= 0.66) return 'text-amber-400';
     return 'text-red-400';
   };
+
+  // Calculate temperature color intensity for heat press visualization
+  const getHeatIntensity = (controllerIndex: number) => {
+    if (controllers.length === 0 || !controllers[controllerIndex]) return 'bg-gray-200';
+    
+    const controller = controllers[controllerIndex];
+    const range = controller.maxTemp - controller.minTemp;
+    const ratio = (controller.currentTemp - controller.minTemp) / range;
+    
+    if (ratio <= 0.2) return 'bg-blue-200';
+    if (ratio <= 0.4) return 'bg-blue-400';
+    if (ratio <= 0.6) return 'bg-amber-400';
+    if (ratio <= 0.8) return 'bg-orange-500';
+    return 'bg-red-600';
+  };
   
   return (
     <Card className="w-full">
@@ -96,6 +111,45 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
+        {/* Heat Press Visualization */}
+        <div className="mb-4 relative">
+          <div className="border border-gray-300 rounded-md bg-gray-100 p-2">
+            <div className="text-center text-xs text-gray-500 mb-1">Heat Press Visualization</div>
+            <div className="flex justify-center mb-2">
+              <Thermometer className="h-4 w-4 text-gray-500 mr-1" />
+              <span className="text-xs">{zone.name} Elements</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {Array.from({ length: Math.min(4, controllers.length) }).map((_, index) => (
+                <div 
+                  key={index} 
+                  className={cn(
+                    "h-8 rounded-md transition-colors duration-300 flex items-center justify-center text-xs font-medium text-white shadow-inner",
+                    getHeatIntensity(index)
+                  )}
+                >
+                  {controllers[index]?.name.split(' ')[0]}
+                </div>
+              ))}
+            </div>
+            {controllers.length > 4 && (
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: Math.min(4, controllers.length - 4) }).map((_, index) => (
+                  <div 
+                    key={index + 4} 
+                    className={cn(
+                      "h-8 rounded-md transition-colors duration-300 flex items-center justify-center text-xs font-medium text-white shadow-inner",
+                      getHeatIntensity(index + 4)
+                    )}
+                  >
+                    {controllers[index + 4]?.name.split(' ')[0]}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <Slider 
