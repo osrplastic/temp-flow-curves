@@ -69,6 +69,18 @@
   }
   
   .temperature-display {
-    @apply font-mono text-4xl font-bold transition-colors;
+    @apply font-mono font-bold transition-colors;
+  }
+  
+  .text-temp-cold {
+    @apply text-blue-400;
+  }
+  
+  .text-temp-warm {
+    @apply text-amber-400;
+  }
+  
+  .text-temp-hot {
+    @apply text-red-400;
   }
 }

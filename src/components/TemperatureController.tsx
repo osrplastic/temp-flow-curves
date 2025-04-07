@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -104,8 +105,8 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
   
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
+      <CardHeader className="p-3">
+        <CardTitle className="flex justify-between items-center text-lg">
           <div className="flex items-center">
             <span>{controller.name}</span>
           </div>
@@ -130,10 +131,10 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 p-3">
         <div className="flex justify-center">
           <div className={cn(
-            "temperature-display", 
+            "temperature-display text-3xl", 
             getTempColor(currentTemp)
           )}>
             {currentTemp.toFixed(1)}°C
@@ -144,7 +145,7 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
           <div className="flex justify-between text-sm">
             <span>Target: {controller.targetTemp}°C</span>
             <span className="text-xs text-muted-foreground">
-              Range: {controller.minTemp}°C - {controller.maxTemp}°C
+              {controller.minTemp}°C - {controller.maxTemp}°C
             </span>
           </div>
           <Slider 
@@ -167,22 +168,24 @@ const TemperatureController: React.FC<TemperatureControllerProps> = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between p-3">
         {!controller.isRunning ? (
           <Button 
-            className="flex-1 gap-2" 
+            className="flex-1 gap-2 text-sm h-8" 
+            size="sm"
             onClick={() => onStart(controller.id)}
           >
-            <Play className="h-4 w-4" />
+            <Play className="h-3 w-3" />
             Start
           </Button>
         ) : (
           <Button 
-            className="flex-1 gap-2" 
+            className="flex-1 gap-2 text-sm h-8" 
             variant="destructive" 
+            size="sm"
             onClick={() => onStop(controller.id)}
           >
-            <Pause className="h-4 w-4" />
+            <Pause className="h-3 w-3" />
             Stop
           </Button>
         )}

@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { api, Controller, TemperatureProfile, HeatZone } from '@/lib/api';
 import TemperatureController from '@/components/TemperatureController';
+import ZoneMasterControl from '@/components/ZoneMasterControl';
 import MainNav from '@/components/MainNav';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,36 +33,31 @@ const Index = () => {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [zoneOpenState, setZoneOpenState] = useState<Record<string, boolean>>({});
   
-  // Fetch controllers
   const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
     queryKey: ['controllers'],
     queryFn: api.getControllers
   });
   
-  // Fetch profiles
   const { data: profilesData, isLoading: profilesLoading } = useQuery({
     queryKey: ['profiles'],
     queryFn: api.getProfiles
   });
   
-  // Fetch zones
   const { data: zonesData, isLoading: zonesLoading } = useQuery({
     queryKey: ['zones'],
     queryFn: api.getZones
   });
   
-  // Initialize zone open state
   useEffect(() => {
     if (zonesData) {
       const initialOpenState: Record<string, boolean> = {};
       zonesData.forEach(zone => {
-        initialOpenState[zone.id] = true; // Start with all zones expanded
+        initialOpenState[zone.id] = true;
       });
       setZoneOpenState(initialOpenState);
     }
   }, [zonesData]);
   
-  // Update state when data is loaded
   useEffect(() => {
     if (controllersData) setControllers(controllersData);
   }, [controllersData]);
@@ -75,7 +70,6 @@ const Index = () => {
     if (zonesData) setZones(zonesData);
   }, [zonesData]);
   
-  // Handle controller updates
   const handleUpdateController = async (id: string, data: Partial<Controller>) => {
     try {
       const updatedController = await api.updateController(id, data);
@@ -91,7 +85,6 @@ const Index = () => {
     }
   };
   
-  // Handle controller start
   const handleStartController = async (id: string, profileId?: string) => {
     try {
       const updatedController = await api.startController(id, profileId);
@@ -114,7 +107,6 @@ const Index = () => {
     }
   };
   
-  // Handle controller stop
   const handleStopController = async (id: string) => {
     try {
       const updatedController = await api.stopController(id);
@@ -135,13 +127,11 @@ const Index = () => {
     }
   };
   
-  // Open profile selection dialog
   const openProfileDialog = (controller: Controller) => {
     setSelectedController(controller);
     setProfileDialogOpen(true);
   };
   
-  // Apply profile to controller
   const applyProfile = async (profileId: string) => {
     if (!selectedController) return;
     
@@ -157,7 +147,6 @@ const Index = () => {
     }
   };
   
-  // Create a new controller
   const handleCreateController = async (data: Omit<Controller, 'id' | 'currentTemp' | 'currentProfile' | 'isRunning' | 'lastUpdated'>) => {
     try {
       await api.createController(data);
@@ -177,12 +166,10 @@ const Index = () => {
     }
   };
   
-  // Group controllers by zone
   const getControllersByZone = (zoneId: string) => {
     return controllers.filter(controller => controller.zoneId === zoneId);
   };
   
-  // Toggle zone collapsible state
   const toggleZoneOpen = (zoneId: string) => {
     setZoneOpenState(prev => ({
       ...prev,
@@ -190,13 +177,34 @@ const Index = () => {
     }));
   };
   
-  // Open add controller dialog with preselected zone
   const openAddControllerWithZone = (zoneId: string) => {
     setSelectedZoneId(zoneId);
     setAddControllerDialogOpen(true);
   };
   
-  // Loading state
+  const handleUpdateAllInZone = async (zoneId: string, targetTemp: number) => {
+    try {
+      const zoneControllers = controllers.filter(c => c.zoneId === zoneId);
+      
+      for (const controller of zoneControllers) {
+        await api.updateController(controller.id, { targetTemp });
+      }
+      
+      refetchControllers();
+      
+      toast({
+        title: "Zone Updated",
+        description: `Set target temperature to ${targetTemp}°C for all controllers in zone`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update zone controllers",
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
@@ -266,32 +274,44 @@ const Index = () => {
                 </CardHeader>
                 <CollapsibleContent>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                      {zoneControllers.map(controller => (
-                        <div key={controller.id} className="flex flex-col">
-                          <TemperatureController 
-                            controller={controller}
-                            profiles={profiles}
-                            onUpdate={handleUpdateController}
-                            onStart={(id) => openProfileDialog(controller)}
-                            onStop={handleStopController}
-                          />
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-12 gap-6 pt-2">
+                      <div className="col-span-12 md:col-span-4 lg:col-span-3">
+                        <ZoneMasterControl 
+                          zone={zone} 
+                          controllers={zoneControllers}
+                          onUpdateAll={handleUpdateAllInZone}
+                        />
+                      </div>
                       
-                      {zoneControllers.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center p-6 border border-dashed rounded-lg border-muted">
-                          <p className="text-muted-foreground mb-4">No controllers in this zone</p>
-                          <Button 
-                            onClick={() => openAddControllerWithZone(zone.id)}
-                            variant="outline"
-                            className="gap-2"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add Controller
-                          </Button>
+                      <div className="col-span-12 md:col-span-8 lg:col-span-9">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {zoneControllers.map(controller => (
+                            <div key={controller.id} className="flex flex-col">
+                              <TemperatureController 
+                                controller={controller}
+                                profiles={profiles}
+                                onUpdate={handleUpdateController}
+                                onStart={(id) => openProfileDialog(controller)}
+                                onStop={handleStopController}
+                              />
+                            </div>
+                          ))}
+                          
+                          {zoneControllers.length === 0 && (
+                            <div className="col-span-full flex flex-col items-center justify-center p-6 border border-dashed rounded-lg border-muted">
+                              <p className="text-muted-foreground mb-4">No controllers in this zone</p>
+                              <Button 
+                                onClick={() => openAddControllerWithZone(zone.id)}
+                                variant="outline"
+                                className="gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Controller
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </CardContent>
                 </CollapsibleContent>
@@ -307,7 +327,6 @@ const Index = () => {
         )}
       </div>
       
-      {/* Profile selection dialog */}
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -351,7 +370,6 @@ const Index = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Add controller dialog */}
       <Dialog open={addControllerDialogOpen} onOpenChange={setAddControllerDialogOpen}>
         <DialogContent>
           <DialogHeader>
