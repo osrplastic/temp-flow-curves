@@ -4,7 +4,7 @@ import TemperatureController from '@/components/TemperatureController';
 import ZoneMasterControl from '@/components/ZoneMasterControl';
 import MainNav from '@/components/MainNav';
 import { useToast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
@@ -22,6 +22,27 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const zoneFormSchema = z.object({
+  name: z.string().min(1, "Zone name is required"),
+  description: z.string().optional(),
+});
+
+type ZoneFormValues = z.infer<typeof zoneFormSchema>;
 
 const Index = () => {
   const { toast } = useToast();
@@ -30,10 +51,19 @@ const Index = () => {
   const [zones, setZones] = useState<HeatZone[]>([]);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [addControllerDialogOpen, setAddControllerDialogOpen] = useState(false);
+  const [addZoneDialogOpen, setAddZoneDialogOpen] = useState(false);
   const [selectedController, setSelectedController] = useState<Controller | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [zoneOpenState, setZoneOpenState] = useState<Record<string, boolean>>({});
   const [editControllerDialogOpen, setEditControllerDialogOpen] = useState(false);
+  
+  const zoneForm = useForm<ZoneFormValues>({
+    resolver: zodResolver(zoneFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
   
   const { data: controllersData, isLoading: controllersLoading, refetch: refetchControllers } = useQuery({
     queryKey: ['controllers'],
@@ -45,7 +75,7 @@ const Index = () => {
     queryFn: api.getProfiles
   });
   
-  const { data: zonesData, isLoading: zonesLoading } = useQuery({
+  const { data: zonesData, isLoading: zonesLoading, refetch: refetchZones } = useQuery({
     queryKey: ['zones'],
     queryFn: api.getZones
   });
@@ -289,6 +319,31 @@ const Index = () => {
     setEditControllerDialogOpen(true);
   };
   
+  const handleCreateZone = async (data: ZoneFormValues) => {
+    try {
+      await api.createZone({
+        name: data.name,
+        description: data.description,
+      });
+      
+      refetchZones();
+      
+      setAddZoneDialogOpen(false);
+      zoneForm.reset();
+      
+      toast({
+        title: "Zone Created",
+        description: `${data.name} has been created`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create zone",
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (controllersLoading || profilesLoading || zonesLoading) {
     return (
       <div className="container py-6 space-y-6">
@@ -309,13 +364,23 @@ const Index = () => {
       
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Temperature Controllers</h1>
-        <Button 
-          onClick={() => setAddControllerDialogOpen(true)}
-          className="gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Controller
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setAddZoneDialogOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Zone
+          </Button>
+          <Button 
+            onClick={() => setAddControllerDialogOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Controller
+          </Button>
+        </div>
       </div>
       
       <div className="space-y-6">
@@ -411,6 +476,14 @@ const Index = () => {
         {zones.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg border-muted">
             <p className="text-muted-foreground mb-4">No heat zones available</p>
+            <Button 
+              onClick={() => setAddZoneDialogOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Zone
+            </Button>
           </div>
         )}
       </div>
@@ -484,6 +557,65 @@ const Index = () => {
               onDelete={handleDeleteController}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={addZoneDialogOpen} onOpenChange={setAddZoneDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Zone</DialogTitle>
+            <DialogDescription>
+              Add a new heating zone to your system.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...zoneForm}>
+            <form onSubmit={zoneForm.handleSubmit(handleCreateZone)} className="space-y-4">
+              <FormField
+                control={zoneForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Living Room" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      A descriptive name for your heating zone
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={zoneForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="North side of the house, includes kitchen and dining area" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide additional details about this zone
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setAddZoneDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create Zone</Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
