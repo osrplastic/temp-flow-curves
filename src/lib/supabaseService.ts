@@ -40,14 +40,18 @@ class SupabaseService {
       // First cast to unknown, then to the specific type
       if (Array.isArray(controlPointsJson)) {
         return controlPointsJson.map(point => {
+          // Safely access properties by checking the type first
           if (typeof point === 'object' && point !== null) {
+            // Need to use type assertion after verifying it's an object
+            const pointObj = point as Record<string, unknown>;
+            
             // Ensure each point has the required properties
             return {
-              x: typeof point.x === 'number' ? point.x : 0,
-              y: typeof point.y === 'number' ? point.y : 0,
-              type: (point.type as ControlPoint['type']) || 'linear',
-              handleX: typeof point.handleX === 'number' ? point.handleX : undefined,
-              handleY: typeof point.handleY === 'number' ? point.handleY : undefined
+              x: typeof pointObj.x === 'number' ? pointObj.x : 0,
+              y: typeof pointObj.y === 'number' ? pointObj.y : 0,
+              type: (typeof pointObj.type === 'string' ? pointObj.type : 'linear') as ControlPoint['type'],
+              handleX: typeof pointObj.handleX === 'number' ? pointObj.handleX : undefined,
+              handleY: typeof pointObj.handleY === 'number' ? pointObj.handleY : undefined
             };
           }
           return { x: 0, y: 0, type: 'linear' };
