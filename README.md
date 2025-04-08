@@ -71,3 +71,9 @@ Yes it is!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+
+### References
+
+- [Github](https://github.com/osrplastic/temp-flow-curves.git)
+- [Preview](https://preview--temp-flow-curves.lovable.app/)
