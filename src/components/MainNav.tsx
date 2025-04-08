@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Thermometer, LineChart, Settings, Moon, Sun } from 'lucide-react';
+import { Thermometer, LineChart, Settings, Moon, Sun, Grid } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
 interface MainNavProps {
@@ -25,6 +25,12 @@ const MainNav: React.FC<MainNavProps> = ({ className }) => {
       href: '/profiles',
       icon: <LineChart className="h-5 w-5" />,
       active: location.pathname === '/profiles'
+    },
+    {
+      name: 'Zones',
+      href: '/zone-settings',
+      icon: <Grid className="h-5 w-5" />,
+      active: location.pathname === '/zone-settings'
     },
     {
       name: 'Settings',

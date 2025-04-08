@@ -121,6 +121,18 @@ class SupabaseService {
     }
   }
 
+  async deleteZone(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('heat_zones')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error deleting zone:', error);
+      throw new Error(`Failed to delete zone: ${error.message}`);
+    }
+  }
+
   // Controller-specific methods
   async getControllers(): Promise<Controller[]> {
     const { data, error } = await supabase

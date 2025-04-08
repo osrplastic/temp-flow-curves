@@ -36,6 +36,10 @@ class StorageService {
   async saveZones(zones: HeatZone[]): Promise<void> {
     return zoneStorage.saveZones(zones);
   }
+  
+  async deleteZone(id: string): Promise<void> {
+    return zoneStorage.deleteZone(id);
+  }
 }
 
 export const storageService = new StorageService();

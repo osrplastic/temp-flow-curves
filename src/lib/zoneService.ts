@@ -26,5 +26,23 @@ export const zoneService = {
   getZoneControllers: async (zoneId: string): Promise<Controller[]> => {
     const controllers = await controllerService.getControllers();
     return controllers.filter(controller => controller.zoneId === zoneId);
+  },
+  
+  // Delete a zone
+  deleteZone: async (id: string): Promise<void> => {
+    // Check if zone has any controllers
+    const controllers = await controllerService.getControllers();
+    const zoneControllers = controllers.filter(c => c.zoneId === id);
+    
+    if (zoneControllers.length > 0) {
+      throw new Error('Cannot delete zone with associated controllers. Please remove all controllers from this zone first.');
+    }
+    
+    try {
+      await storageService.deleteZone(id);
+    } catch (error) {
+      console.error('Error deleting zone:', error);
+      throw new Error('Failed to delete zone');
+    }
   }
 };

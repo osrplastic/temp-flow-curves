@@ -1,4 +1,3 @@
-
 // Re-export types
 export * from './types';
 
@@ -13,6 +12,7 @@ export const api = {
   getZones: zoneService.getZones,
   getZone: zoneService.getZone,
   getZoneControllers: zoneService.getZoneControllers,
+  deleteZone: zoneService.deleteZone,
   
   // Re-export profile methods
   getProfiles: profileService.getProfiles,
