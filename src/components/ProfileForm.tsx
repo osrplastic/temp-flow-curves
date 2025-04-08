@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import BezierEditor from './BezierEditor';
 import { ControlPoint, TemperatureProfile } from '@/lib/api';
@@ -34,9 +35,9 @@ interface ProfileFormProps {
 }
 
 const defaultControlPoints: ControlPoint[] = [
-  { x: 0, y: 0 },
-  { x: 0.5, y: 0.5, handleX: 0.2, handleY: 0.5 },
-  { x: 1, y: 1 }
+  { x: 0, y: 0, type: 'linear' },
+  { x: 0.5, y: 0.5, handleX: 0.2, handleY: 0.5, type: 'cubic' },
+  { x: 1, y: 1, type: 'linear' }
 ];
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ 
@@ -127,9 +128,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             maxTemp={maxTemp}
             className="border rounded-md p-2"
           />
-          <p className="text-xs text-muted-foreground">
-            Drag points to adjust the temperature curve. The first and last points are fixed horizontally.
-          </p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>
+              Click on a control point to change its type (Linear, Quadratic, or Cubic).
+            </p>
+            <p>
+              Double-click on the curve to add a new linear control point.
+            </p>
+            <p>
+              Double-click on a control point to remove it (except first and last points).
+            </p>
+            <p>
+              Drag points to adjust the temperature curve. Control points with handles offer more curve control.
+            </p>
+          </div>
         </div>
         
         <Button type="submit" className="w-full">

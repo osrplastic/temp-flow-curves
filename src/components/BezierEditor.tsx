@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ControlPoint } from '@/lib/api';
+import { ControlPoint, ControlPointType } from '@/lib/api';
 import { getBezierPath } from '@/lib/bezier';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +71,72 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     setActivePointIndex(index);
     setActiveHandle('handle');
     e.stopPropagation();
+  };
+  
+  // Toggle control point type
+  const toggleControlPointType = (index: number) => {
+    if (readonly || index === 0 || index === controlPoints.length - 1) return;
+    
+    const newPoints = [...controlPoints];
+    const point = newPoints[index];
+    const currentType = point.type || 'linear';
+    
+    const types: ControlPointType[] = ['linear', 'quadratic', 'cubic'];
+    const nextTypeIndex = (types.indexOf(currentType) + 1) % types.length;
+    const nextType = types[nextTypeIndex];
+    
+    newPoints[index] = { 
+      ...point, 
+      type: nextType 
+    };
+    
+    onChange(newPoints);
+  };
+  
+  // Handle double click on a control point (delete)
+  const handlePointDoubleClick = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (readonly) return;
+    
+    // Don't allow deleting the first or last points
+    if (index === 0 || index === controlPoints.length - 1) return;
+    
+    const newPoints = [...controlPoints];
+    newPoints.splice(index, 1);
+    onChange(newPoints);
+  };
+  
+  // Handle double click on the SVG (add a point)
+  const handleSvgDoubleClick = (e: React.MouseEvent) => {
+    if (readonly) return;
+    
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (!svgRect) return;
+    
+    const x = e.clientX - svgRect.left;
+    const y = e.clientY - svgRect.top;
+    const normalizedCoords = toNormalizedCoords(x, y);
+    
+    // Find where to insert the new point
+    let insertIndex = 1;
+    for (let i = 0; i < controlPoints.length - 1; i++) {
+      if (normalizedCoords.x > controlPoints[i].x && normalizedCoords.x < controlPoints[i + 1].x) {
+        insertIndex = i + 1;
+        break;
+      }
+    }
+    
+    // Create the new point as linear by default
+    const newPoint: ControlPoint = {
+      x: normalizedCoords.x,
+      y: normalizedCoords.y,
+      type: 'linear'
+    };
+    
+    // Insert the point at the appropriate position
+    const newPoints = [...controlPoints];
+    newPoints.splice(insertIndex, 0, newPoint);
+    onChange(newPoints);
   };
   
   // Handle mouse move
@@ -197,6 +263,60 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     return labels;
   };
   
+  // Get control point shape based on type
+  const getControlPointShape = (point: ControlPoint, index: number) => {
+    const svgPoint = toSvgCoords(point);
+    const type = point.type || 'linear';
+    
+    const isFirstOrLast = index === 0 || index === controlPoints.length - 1;
+    
+    const commonProps = {
+      onClick: () => toggleControlPointType(index),
+      onDoubleClick: (e: React.MouseEvent) => handlePointDoubleClick(index, e),
+      onMouseDown: (e: React.MouseEvent) => handlePointMouseDown(index, e),
+      className: cn(
+        "stroke-background stroke-1",
+        !readonly && "cursor-pointer"
+      )
+    };
+    
+    if (type === 'linear' || isFirstOrLast) {
+      // Circle for linear type or first/last points
+      return (
+        <circle
+          cx={svgPoint.x}
+          cy={svgPoint.y}
+          r={5}
+          fill={isFirstOrLast ? "#ff6b6b" : "#4dabf7"}
+          {...commonProps}
+        />
+      );
+    } else if (type === 'quadratic') {
+      // Square for quadratic type
+      return (
+        <rect
+          x={svgPoint.x - 4}
+          y={svgPoint.y - 4}
+          width={8}
+          height={8}
+          fill="#12b886"
+          {...commonProps}
+        />
+      );
+    } else if (type === 'cubic') {
+      // Diamond for cubic type
+      return (
+        <polygon
+          points={`${svgPoint.x},${svgPoint.y-5} ${svgPoint.x+5},${svgPoint.y} ${svgPoint.x},${svgPoint.y+5} ${svgPoint.x-5},${svgPoint.y}`}
+          fill="#9775fa"
+          {...commonProps}
+        />
+      );
+    }
+    
+    return null;
+  };
+  
   return (
     <svg
       ref={svgRef}
@@ -204,6 +324,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDoubleClick={handleSvgDoubleClick}
     >
       {/* Grid lines */}
       {[0.2, 0.4, 0.6, 0.8].map(y => {
@@ -240,6 +361,10 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
       {/* Control points and handles */}
       {controlPoints.map((point, index) => {
         const svgPoint = toSvgCoords(point);
+        const type = point.type || 'linear';
+        
+        // Don't show handles for linear points or the last point
+        const showHandles = !readonly && index < controlPoints.length - 1 && type !== 'linear';
         
         // Default handle positions if not specified
         const nextPoint = index < controlPoints.length - 1 ? controlPoints[index + 1] : null;
@@ -257,19 +382,10 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         return (
           <React.Fragment key={`control-${index}`}>
             {/* Control point */}
-            <circle
-              cx={svgPoint.x}
-              cy={svgPoint.y}
-              r={5}
-              className={cn(
-                "fill-primary stroke-background stroke-1",
-                !readonly && "cursor-move"
-              )}
-              onMouseDown={(e) => handlePointMouseDown(index, e)}
-            />
+            {getControlPointShape(point, index)}
             
-            {/* Handle line and point (not for last point) */}
-            {index < controlPoints.length - 1 && !readonly && (
+            {/* Handle line and point */}
+            {showHandles && (
               <>
                 <line
                   x1={svgPoint.x}
@@ -299,6 +415,18 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
       
       {/* Time labels */}
       {renderTimeLabels()}
+      
+      {/* Legend */}
+      <g transform={`translate(${svgDimensions.width - 100}, 10)`}>
+        <circle cx={10} cy={10} r={5} fill="#4dabf7" />
+        <text x={20} y={14} className="text-xs">Linear</text>
+        
+        <rect x={6} y={30} width={8} height={8} fill="#12b886" />
+        <text x={20} y={38} className="text-xs">Quadratic</text>
+        
+        <polygon points="10,60 15,65 10,70 5,65" fill="#9775fa" />
+        <text x={20} y={68} className="text-xs">Cubic</text>
+      </g>
     </svg>
   );
 };
