@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { TemperatureProfile, HeatZone, Controller } from './types';
+import type { Database } from '@/integrations/supabase/types';
 
 // Supabase Service
 class SupabaseService {
