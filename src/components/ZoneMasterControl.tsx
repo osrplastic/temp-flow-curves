@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Play, Thermometer } from 'lucide-react';
+import { ChevronDown, Play, Thermometer, Clock } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
@@ -32,6 +32,10 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
   const [targetTemp, setTargetTemp] = useState(50);
   const [inputValue, setInputValue] = useState('50');
   const [averageTemp, setAverageTemp] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const [isZoneActive, setIsZoneActive] = useState(false);
   
   // Find min and max temperatures across all controllers in this zone
   const minTemp = Math.min(...controllers.map(c => c.minTemp));
@@ -44,7 +48,48 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     const total = controllers.reduce((sum, controller) => sum + controller.currentTemp, 0);
     const avg = total / controllers.length;
     setAverageTemp(Math.round(avg * 10) / 10);
+    
+    // Check if any controller in the zone is running
+    const anyControllerRunning = controllers.some(c => c.isRunning);
+    setIsZoneActive(anyControllerRunning);
+    
+    // Find the first running profile
+    const runningController = controllers.find(c => c.isRunning && c.currentProfile);
+    if (runningController && runningController.currentProfile) {
+      setActiveProfileId(runningController.currentProfile);
+    } else {
+      setActiveProfileId(null);
+    }
   }, [controllers]);
+  
+  // Timer for tracking elapsed and remaining time
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isZoneActive && activeProfileId) {
+      const activeProfile = profiles?.find(p => p.id === activeProfileId);
+      
+      if (activeProfile) {
+        const totalDuration = activeProfile.duration * 60; // convert minutes to seconds
+        
+        interval = setInterval(() => {
+          setElapsedTime(prev => {
+            const newElapsed = prev + 1;
+            setRemainingTime(Math.max(0, totalDuration - newElapsed));
+            return newElapsed;
+          });
+        }, 1000);
+      }
+    } else {
+      // Reset times when zone becomes inactive
+      setElapsedTime(0);
+      setRemainingTime(0);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isZoneActive, activeProfileId, profiles]);
   
   const handleSliderChange = (values: number[]) => {
     const newTemp = values[0];
@@ -100,6 +145,13 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     return 'bg-red-600';
   };
   
+  // Format time display (MM:SS)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
   // Map for consistent controller positions
   const controllerPositionMap = [
     { position: 'Top-Front', label: 'Nr.1' },
@@ -107,6 +159,11 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     { position: 'Top-Back', label: 'Nr.3' },
     { position: 'Bottom-Back', label: 'Nr.4' }
   ];
+  
+  // Get active profile name
+  const activeProfileName = activeProfileId
+    ? profiles?.find(p => p.id === activeProfileId)?.name || 'Unknown Profile'
+    : null;
   
   return (
     <Card className="w-full">
@@ -119,6 +176,27 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
+        {/* Timer Display */}
+        {isZoneActive && (
+          <div className="flex items-center justify-between text-sm bg-secondary/30 rounded-md px-3 py-2 mb-2">
+            <div className="flex items-center gap-1">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {activeProfileName && (
+                <span className="text-muted-foreground">
+                  {activeProfileName}
+                </span>
+              )}
+            </div>
+            <div className="font-mono">
+              <span className="text-muted-foreground">Time: </span>
+              <span>{formatTime(elapsedTime)}</span>
+              <span className="mx-1 text-muted-foreground">/</span>
+              <span className="text-muted-foreground">Remaining: </span>
+              <span>{formatTime(remainingTime)}</span>
+            </div>
+          </div>
+        )}
+      
         {/* Heat Press Visualization */}
         <div className="mb-4 relative">
           <div className="border border-gray-300 rounded-md bg-gray-100 p-2">
