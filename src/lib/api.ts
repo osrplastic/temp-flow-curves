@@ -1,3 +1,4 @@
+
 import { Hono } from 'hono';
 import { z } from "zod";
 
@@ -12,15 +13,12 @@ export type TemperatureProfile = {
   updatedAt: string;
 };
 
-export type ControlPointType = 'linear' | 'quadratic' | 'cubic';
-
-export interface ControlPoint {
-  x: number;
-  y: number;
-  handleX?: number;
-  handleY?: number;
-  type?: ControlPointType;
-}
+export type ControlPoint = {
+  x: number; // Normalized time (0-1)
+  y: number; // Normalized temperature (0-1)
+  handleX?: number; // Bezier control point for x
+  handleY?: number; // Bezier control point for y
+};
 
 export type HeatZone = {
   id: string;

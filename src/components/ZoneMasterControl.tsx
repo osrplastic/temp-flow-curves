@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -13,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Play, Thermometer, Clock, Square, ThermometerSun } from 'lucide-react';
+import { ChevronDown, Play, Thermometer, Clock, Square } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
@@ -227,11 +226,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
                     )}
                   >
                     {pos.position} - {pos.label}
-                    {controller && (
-                      <span className="ml-1 font-mono">
-                        {controller.currentTemp.toFixed(1)}°
-                      </span>
-                    )}
                   </div>
                 );
               })}
@@ -249,11 +243,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
                     )}
                   >
                     {pos.position} - {pos.label}
-                    {controller && (
-                      <span className="ml-1 font-mono">
-                        {controller.currentTemp.toFixed(1)}°
-                      </span>
-                    )}
                   </div>
                 );
               })}
