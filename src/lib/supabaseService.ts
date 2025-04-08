@@ -1,7 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { TemperatureProfile, HeatZone, Controller } from './types';
+import { TemperatureProfile, HeatZone, Controller, ControlPoint } from './types';
 import type { Database } from '@/integrations/supabase/types';
+import { Json } from '@/integrations/supabase/types';
 
 // Supabase Service
 class SupabaseService {
@@ -20,11 +21,27 @@ class SupabaseService {
       id: profile.id,
       name: profile.name,
       description: profile.description || '',
-      controlPoints: profile.control_points,
+      controlPoints: this.parseControlPoints(profile.control_points),
       duration: profile.duration,
       createdAt: profile.created_at,
       updatedAt: profile.updated_at
     }));
+  }
+
+  // Helper method to parse control points from JSON
+  private parseControlPoints(controlPointsJson: Json): ControlPoint[] {
+    if (!controlPointsJson) return [];
+    
+    try {
+      if (typeof controlPointsJson === 'string') {
+        return JSON.parse(controlPointsJson);
+      }
+      
+      return controlPointsJson as ControlPoint[];
+    } catch (error) {
+      console.error('Error parsing control points:', error);
+      return [];
+    }
   }
 
   async saveProfiles(profiles: TemperatureProfile[]): Promise<void> {
@@ -37,7 +54,7 @@ class SupabaseService {
           id: profile.id,
           name: profile.name,
           description: profile.description,
-          control_points: profile.controlPoints,
+          control_points: profile.controlPoints as unknown as Json,
           duration: profile.duration,
           created_at: profile.createdAt,
           updated_at: new Date().toISOString()
