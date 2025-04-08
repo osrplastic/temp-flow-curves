@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +18,7 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Controller, HeatZone } from '@/lib/api';
 import {
@@ -27,6 +29,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Form schema
 const formSchema = z.object({
@@ -56,6 +68,8 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
   onCancel,
   onDelete
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -111,6 +125,9 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
     <>
       <DialogHeader>
         <DialogTitle>Edit Controller: {controller.name}</DialogTitle>
+        <DialogDescription>
+          Modify controller settings or delete this controller.
+        </DialogDescription>
       </DialogHeader>
       
       <Form {...form}>
@@ -246,7 +263,7 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
                 <Button 
                   type="button" 
                   variant="destructive" 
-                  onClick={handleDelete}
+                  onClick={() => setDeleteDialogOpen(true)}
                   className="gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -265,6 +282,23 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
           </DialogFooter>
         </form>
       </Form>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Controller</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{controller.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

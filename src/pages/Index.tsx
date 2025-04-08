@@ -202,6 +202,25 @@ const Index = () => {
     }
   };
   
+  const handleDeleteController = async (id: string) => {
+    try {
+      await api.deleteController(id);
+      setControllers(prev => prev.filter(c => c.id !== id));
+      setEditControllerDialogOpen(false);
+      
+      toast({
+        title: "Controller Deleted",
+        description: "Controller has been successfully deleted"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete controller",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const getControllersByZone = (zoneId: string) => {
     return controllers.filter(controller => controller.zoneId === zoneId);
   };
@@ -462,6 +481,7 @@ const Index = () => {
               zones={zones}
               onSubmit={handleUpdateController}
               onCancel={() => setEditControllerDialogOpen(false)}
+              onDelete={handleDeleteController}
             />
           )}
         </DialogContent>
