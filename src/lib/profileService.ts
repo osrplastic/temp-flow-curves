@@ -46,9 +46,12 @@ export const profileService = {
     // Get existing profiles
     const profiles = await storageService.getProfiles();
     
+    // Create a UUID for the new profile
+    const newId = crypto.randomUUID();
+    
     // Create new profile
     const newProfile: TemperatureProfile = {
-      id: `profile-${Date.now()}`,
+      id: newId,
       name: validated.name,
       description: validated.description,
       controlPoints: validated.controlPoints.map(point => ({

@@ -9,7 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      controllers: {
+        Row: {
+          current_profile: string | null
+          current_temp: number
+          id: string
+          is_running: boolean
+          last_updated: string
+          max_temp: number
+          min_temp: number
+          name: string
+          slave_id: number
+          target_temp: number
+          update_interval: number
+          zone_id: string
+        }
+        Insert: {
+          current_profile?: string | null
+          current_temp: number
+          id?: string
+          is_running?: boolean
+          last_updated?: string
+          max_temp: number
+          min_temp: number
+          name: string
+          slave_id: number
+          target_temp: number
+          update_interval: number
+          zone_id: string
+        }
+        Update: {
+          current_profile?: string | null
+          current_temp?: number
+          id?: string
+          is_running?: boolean
+          last_updated?: string
+          max_temp?: number
+          min_temp?: number
+          name?: string
+          slave_id?: number
+          target_temp?: number
+          update_interval?: number
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controllers_current_profile_fkey"
+            columns: ["current_profile"]
+            isOneToOne: false
+            referencedRelation: "temperature_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "controllers_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "heat_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      heat_zones: {
+        Row: {
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      temperature_profiles: {
+        Row: {
+          control_points: Json
+          created_at: string
+          description: string | null
+          duration: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          control_points: Json
+          created_at?: string
+          description?: string | null
+          duration: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          control_points?: Json
+          created_at?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

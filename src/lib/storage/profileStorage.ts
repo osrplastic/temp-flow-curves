@@ -1,16 +1,15 @@
 
 import { TemperatureProfile } from '../types';
-import { baseStorageService } from './baseStorageService';
-import { PROFILES_KEY } from './storageKeys';
+import { supabaseService } from '../supabaseService';
 
 // Profile-specific storage methods
 class ProfileStorage {
   async getProfiles(): Promise<TemperatureProfile[]> {
-    return baseStorageService.getItems<TemperatureProfile>(PROFILES_KEY);
+    return supabaseService.getProfiles();
   }
 
   async saveProfiles(profiles: TemperatureProfile[]): Promise<void> {
-    return baseStorageService.saveItems(PROFILES_KEY, profiles);
+    return supabaseService.saveProfiles(profiles);
   }
 }
 

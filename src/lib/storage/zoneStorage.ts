@@ -1,16 +1,15 @@
 
 import { HeatZone } from '../types';
-import { baseStorageService } from './baseStorageService';
-import { ZONES_KEY } from './storageKeys';
+import { supabaseService } from '../supabaseService';
 
 // Zone-specific storage methods
 class ZoneStorage {
   async getZones(): Promise<HeatZone[]> {
-    return baseStorageService.getItems<HeatZone>(ZONES_KEY);
+    return supabaseService.getZones();
   }
 
   async saveZones(zones: HeatZone[]): Promise<void> {
-    return baseStorageService.saveItems(ZONES_KEY, zones);
+    return supabaseService.saveZones(zones);
   }
 }
 

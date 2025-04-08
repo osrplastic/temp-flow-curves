@@ -1,16 +1,15 @@
 
 import { Controller } from '../types';
-import { baseStorageService } from './baseStorageService';
-import { CONTROLLERS_KEY } from './storageKeys';
+import { supabaseService } from '../supabaseService';
 
 // Controller-specific storage methods
 class ControllerStorage {
   async getControllers(): Promise<Controller[]> {
-    return baseStorageService.getItems<Controller>(CONTROLLERS_KEY);
+    return supabaseService.getControllers();
   }
 
   async saveControllers(controllers: Controller[]): Promise<void> {
-    return baseStorageService.saveItems(CONTROLLERS_KEY, controllers);
+    return supabaseService.saveControllers(controllers);
   }
 }
 

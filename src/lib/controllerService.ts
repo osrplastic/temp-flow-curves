@@ -104,9 +104,12 @@ export const controllerService = {
     // Get existing controllers
     const controllers = await storageService.getControllers();
     
+    // Generate a new UUID
+    const newId = crypto.randomUUID();
+    
     // Create new controller
     const newController: Controller = {
-      id: `controller-${Date.now()}`,
+      id: newId,
       name: validated.name,
       minTemp: validated.minTemp,
       maxTemp: validated.maxTemp,
