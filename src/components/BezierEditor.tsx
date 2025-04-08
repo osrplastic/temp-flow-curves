@@ -151,6 +151,52 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     setActiveHandle(null);
   };
   
+  // Double click on SVG background to add a new control point
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (readonly) return;
+    
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (!svgRect) return;
+    
+    // If double-clicking on a point, remove it
+    if (selectedPointIndex !== null && selectedPointIndex !== 0 && selectedPointIndex !== controlPoints.length - 1) {
+      const newPoints = [...controlPoints];
+      newPoints.splice(selectedPointIndex, 1);
+      onChange(newPoints);
+      setSelectedPointIndex(null);
+      return;
+    }
+    
+    const x = e.clientX - svgRect.left;
+    const y = e.clientY - svgRect.top;
+    const normalizedCoords = toNormalizedCoords(x, y);
+    
+    // Find where to insert the new point
+    const newPoints = [...controlPoints];
+    let insertIndex = 1; // Default after first point
+    
+    for (let i = 0; i < newPoints.length - 1; i++) {
+      if (normalizedCoords.x > newPoints[i].x && normalizedCoords.x < newPoints[i + 1].x) {
+        insertIndex = i + 1;
+        break;
+      }
+    }
+    
+    // Create new control point
+    const newPoint: ControlPoint = {
+      x: normalizedCoords.x,
+      y: normalizedCoords.y,
+      type: 'linear' // Default type
+    };
+    
+    // Insert the new point
+    newPoints.splice(insertIndex, 0, newPoint);
+    onChange(newPoints);
+    setSelectedPointIndex(insertIndex);
+    
+    e.stopPropagation();
+  };
+  
   // Click on SVG background deselects any selected point
   const handleSvgClick = () => {
     setSelectedPointIndex(null);
@@ -284,6 +330,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onClick={handleSvgClick}
+        onDoubleClick={handleDoubleClick}
       >
         {/* Grid lines */}
         {[0.2, 0.4, 0.6, 0.8].map(y => {
