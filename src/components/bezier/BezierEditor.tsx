@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ControlPoint } from '@/lib/api';
 import { getBezierPath } from '@/lib/bezier';
 import { cn } from '@/lib/utils';
 import { BezierEditorProps, ControlPointType } from './types';
-import { toNormalizedCoords, isSelectable } from './bezierUtils';
+import { toNormalizedCoords, isSelectable, toPathCoords } from './bezierUtils';
 import BezierGrid from './BezierGrid';
 import ControlPoints from './ControlPoints';
 import PointTypeControls from './PointTypeControls';
@@ -303,10 +302,12 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   let pathData = '';
   
   if (pathPoints.length > 0) {
-    pathData = `M ${pathPoints[0].x * svgDimensions.width} ${(1 - pathPoints[0].y) * svgDimensions.height}`;
+    const firstPoint = toPathCoords(pathPoints[0], svgDimensions);
+    pathData = `M ${firstPoint.x} ${firstPoint.y}`;
     
     for (let i = 1; i < pathPoints.length; i++) {
-      pathData += ` L ${pathPoints[i].x * svgDimensions.width} ${(1 - pathPoints[i].y) * svgDimensions.height}`;
+      const point = toPathCoords(pathPoints[i], svgDimensions);
+      pathData += ` L ${point.x} ${point.y}`;
     }
   }
   
@@ -344,11 +345,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         
         <path 
           d={pathData} 
-          stroke="hsl(var(--primary))" 
-          strokeWidth="2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          className="bezier-curve-path"
         />
         
         <ControlPoints

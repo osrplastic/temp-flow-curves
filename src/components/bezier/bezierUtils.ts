@@ -38,3 +38,14 @@ export const toNormalizedCoords = (
 export const isSelectable = (index: number, totalPoints: number): boolean => {
   return index > 0 && index < totalPoints - 1;
 };
+
+// Convert a point from normalized to SVG path coordinates
+export const toPathCoords = (
+  point: { x: number; y: number },
+  svgDimensions: { width: number; height: number }
+) => {
+  return {
+    x: point.x * svgDimensions.width,
+    y: (1 - point.y) * svgDimensions.height
+  };
+};
