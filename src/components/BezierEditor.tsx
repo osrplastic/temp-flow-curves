@@ -48,23 +48,35 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   
   // Convert normalized coordinates to SVG coordinates
   const toSvgCoords = (point: { x: number; y: number }) => {
+    // Add padding to prevent clipping at edges
+    const paddingX = 25; // Left padding for temperature labels
+    const paddingY = 20; // Bottom padding for time labels
+    const usableWidth = svgDimensions.width - paddingX;
+    const usableHeight = svgDimensions.height - paddingY;
+    
     return {
-      x: point.x * svgDimensions.width,
-      y: (1 - point.y) * svgDimensions.height // Flip Y coordinate
+      x: paddingX + (point.x * usableWidth),
+      y: (1 - point.y) * usableHeight // Flip Y coordinate
     };
   };
   
   // Convert SVG coordinates to normalized coordinates
   const toNormalizedCoords = (x: number, y: number) => {
+    const paddingX = 25; // Left padding for temperature labels
+    const paddingY = 20; // Bottom padding for time labels
+    const usableWidth = svgDimensions.width - paddingX;
+    const usableHeight = svgDimensions.height - paddingY;
+    
     return {
-      x: Math.max(0, Math.min(1, x / svgDimensions.width)),
-      y: Math.max(0, Math.min(1, 1 - (y / svgDimensions.height))) // Flip Y coordinate
+      x: Math.max(0, Math.min(1, (x - paddingX) / usableWidth)),
+      y: Math.max(0, Math.min(1, 1 - (y / usableHeight))) // Flip Y coordinate
     };
   };
   
   // Handle clicking on a control point to select it
   const handlePointClick = (index: number, e: React.MouseEvent) => {
     if (readonly) return;
+    e.stopPropagation();
     
     // Toggle selection if clicking the same point
     if (selectedPointIndex === index) {
@@ -72,24 +84,28 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     } else {
       setSelectedPointIndex(index);
     }
-    
-    e.stopPropagation();
   };
   
   // Handle mouse down on a control point
   const handlePointMouseDown = (index: number, e: React.MouseEvent) => {
     if (readonly) return;
+    e.stopPropagation();
     setActivePointIndex(index);
     setActiveHandle('point');
-    e.stopPropagation();
+    
+    // Also select the point
+    setSelectedPointIndex(index);
   };
   
   // Handle mouse down on a handle
   const handleHandleMouseDown = (index: number, e: React.MouseEvent) => {
     if (readonly) return;
+    e.stopPropagation();
     setActivePointIndex(index);
     setActiveHandle('handle');
-    e.stopPropagation();
+    
+    // Also select the point
+    setSelectedPointIndex(index);
   };
   
   // Handle mouse move
@@ -198,7 +214,11 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   };
   
   // Click on SVG background deselects any selected point
-  const handleSvgClick = () => {
+  const handleSvgClick = (e: React.MouseEvent) => {
+    // Don't deselect if we're in the controls area at the bottom
+    if (e.nativeEvent.offsetY > svgDimensions.height - 40) {
+      return;
+    }
     setSelectedPointIndex(null);
   };
   
@@ -292,6 +312,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           y={svgCoords.y}
           className="text-xs fill-muted-foreground"
           alignmentBaseline="middle"
+          data-testid="temp-label" // Added for testing purposes
         >
           {Math.round(temp)}°C
         </text>
@@ -317,6 +338,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           y={svgDimensions.height - 5}
           textAnchor="middle"
           className="text-xs fill-muted-foreground"
+          data-testid="time-label" // Added for testing purposes
         >
           {Math.round(x * 100)}%
         </text>
@@ -336,14 +358,24 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         onMouseLeave={handleMouseUp}
         onClick={handleSvgClick}
         onDoubleClick={handleDoubleClick}
+        style={{ padding: '5px' }} // Add padding to ensure labels are fully visible
       >
+        {/* Background rectangle for better click area */}
+        <rect
+          x="0"
+          y="0"
+          width={svgDimensions.width}
+          height={svgDimensions.height}
+          fill="transparent"
+        />
+      
         {/* Grid lines */}
         {[0.2, 0.4, 0.6, 0.8].map(y => {
           const { y: svgY } = toSvgCoords({ x: 0, y });
           return (
             <line
               key={`grid-y-${y}`}
-              x1={0}
+              x1={25} // Start after temp labels
               y1={svgY}
               x2={svgDimensions.width}
               y2={svgY}
@@ -360,7 +392,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
               x1={svgX}
               y1={0}
               x2={svgX}
-              y2={svgDimensions.height}
+              y2={svgDimensions.height - 20} // Stop above time labels
               className="stroke-muted/20 stroke-dasharray-2"
             />
           );
@@ -403,6 +435,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
                 )}
                 onMouseDown={(e) => handlePointMouseDown(index, e)}
                 onClick={(e) => handlePointClick(index, e)}
+                data-point-id={index} // Added for testing purposes
               />
               
               {/* Handle line and point (not for first and last points) */}
@@ -438,22 +471,21 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         {renderTimeLabels()}
       </svg>
       
-      {!readonly && (
-        <div className="flex justify-center space-x-2">
-          <ToggleGroup 
-            type="single" 
-            value={getSelectedPointType()} 
-            onValueChange={(value) => value && changePointType(value as ControlPointType)}
-            className={cn(
-              selectedPointIndex === null || !isSelectable(selectedPointIndex) ? "opacity-50 pointer-events-none" : ""
-            )}
-          >
-            <ToggleGroupItem value="linear">Linear</ToggleGroupItem>
-            <ToggleGroupItem value="quadratic">Quadratic</ToggleGroupItem>
-            <ToggleGroupItem value="cubic">Cubic</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      )}
+      <div className="flex justify-center space-x-2 mb-2">
+        <ToggleGroup 
+          type="single" 
+          value={getSelectedPointType()} 
+          onValueChange={(value) => value && changePointType(value as ControlPointType)}
+          className={cn(
+            (selectedPointIndex === null || !isSelectable(selectedPointIndex)) ? "opacity-50" : ""
+          )}
+          disabled={selectedPointIndex === null || !isSelectable(selectedPointIndex) || readonly}
+        >
+          <ToggleGroupItem value="linear">Linear</ToggleGroupItem>
+          <ToggleGroupItem value="quadratic">Quadratic</ToggleGroupItem>
+          <ToggleGroupItem value="cubic">Cubic</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
     </div>
   );
 };
