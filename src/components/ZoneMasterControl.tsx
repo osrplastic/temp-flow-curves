@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { HeatZone, Controller, TemperatureProfile } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
@@ -36,6 +37,7 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
   const [remainingTime, setRemainingTime] = useState(0);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [isZoneActive, setIsZoneActive] = useState(false);
+  const [progressPercentage, setProgressPercentage] = useState(0);
   
   // Find min and max temperatures across all controllers in this zone
   const minTemp = Math.min(...controllers.map(c => c.minTemp));
@@ -75,15 +77,22 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
         interval = setInterval(() => {
           setElapsedTime(prev => {
             const newElapsed = prev + 1;
-            setRemainingTime(Math.max(0, totalDuration - newElapsed));
+            const newRemaining = Math.max(0, totalDuration - newElapsed);
+            setRemainingTime(newRemaining);
+            
+            // Calculate and update progress percentage
+            const progress = (newElapsed / totalDuration) * 100;
+            setProgressPercentage(Math.min(100, progress));
+            
             return newElapsed;
           });
         }, 1000);
       }
     } else {
-      // Reset times when zone becomes inactive
+      // Reset times and progress when zone becomes inactive
       setElapsedTime(0);
       setRemainingTime(0);
+      setProgressPercentage(0);
     }
     
     return () => {
@@ -178,22 +187,27 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
       <CardContent className="space-y-4 p-4">
         {/* Timer Display */}
         {isZoneActive && (
-          <div className="flex items-center justify-between text-sm bg-secondary/30 rounded-md px-3 py-2 mb-2">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              {activeProfileName && (
-                <span className="text-muted-foreground">
-                  {activeProfileName}
-                </span>
-              )}
+          <div className="space-y-2 bg-secondary/30 rounded-md px-3 py-2 mb-2">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                {activeProfileName && (
+                  <span className="text-muted-foreground">
+                    {activeProfileName}
+                  </span>
+                )}
+              </div>
+              <div className="font-mono">
+                <span className="text-muted-foreground">Time: </span>
+                <span>{formatTime(elapsedTime)}</span>
+                <span className="mx-1 text-muted-foreground">/</span>
+                <span className="text-muted-foreground">Remaining: </span>
+                <span>{formatTime(remainingTime)}</span>
+              </div>
             </div>
-            <div className="font-mono">
-              <span className="text-muted-foreground">Time: </span>
-              <span>{formatTime(elapsedTime)}</span>
-              <span className="mx-1 text-muted-foreground">/</span>
-              <span className="text-muted-foreground">Remaining: </span>
-              <span>{formatTime(remainingTime)}</span>
-            </div>
+            
+            {/* Progress Bar */}
+            <Progress value={progressPercentage} className="h-2" />
           </div>
         )}
       
