@@ -382,7 +382,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           const svgHandle = toSvgCoords({ x: handleX, y: handleY });
           
           const isSelected = selectedPointIndex === index;
-          const pointType = (point.type as string) || 'linear';
+          const pointType = point.type || 'linear';
           
           return (
             <React.Fragment key={`control-${index}`}>

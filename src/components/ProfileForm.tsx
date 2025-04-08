@@ -59,11 +59,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   });
   
   const handleSubmit = (data: FormData) => {
+    // Prepare control points with proper type information
+    const preparedControlPoints = controlPoints.map(point => ({
+      x: point.x,
+      y: point.y,
+      handleX: point.handleX,
+      handleY: point.handleY,
+      type: point.type || 'linear' // Ensure type is always present
+    }));
+    
     onSubmit({
       name: data.name,
       description: data.description,
       duration: data.duration,
-      controlPoints
+      controlPoints: preparedControlPoints
     });
   };
   

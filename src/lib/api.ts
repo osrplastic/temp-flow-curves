@@ -280,6 +280,7 @@ app.post('/api/profiles', async (c) => {
       y: z.number().min(0).max(1),
       handleX: z.number().optional(),
       handleY: z.number().optional(),
+      type: z.enum(['linear', 'quadratic', 'cubic']).optional(),
     })).min(2),
     duration: z.number().positive(),
   });
@@ -296,7 +297,8 @@ app.post('/api/profiles', async (c) => {
         x: point.x,
         y: point.y,
         handleX: point.handleX,
-        handleY: point.handleY
+        handleY: point.handleY,
+        type: point.type || 'linear'
       })),
       duration: validated.duration,
       createdAt: new Date().toISOString(),
@@ -325,6 +327,7 @@ app.put('/api/profiles/:id', async (c) => {
       y: z.number().min(0).max(1),
       handleX: z.number().optional(),
       handleY: z.number().optional(),
+      type: z.enum(['linear', 'quadratic', 'cubic']).optional(),
     })).min(2),
     duration: z.number().positive(),
   });
@@ -346,7 +349,8 @@ app.put('/api/profiles/:id', async (c) => {
         x: point.x,
         y: point.y,
         handleX: point.handleX,
-        handleY: point.handleY
+        handleY: point.handleY,
+        type: point.type || 'linear'
       })),
       duration: validated.duration,
       updatedAt: new Date().toISOString()

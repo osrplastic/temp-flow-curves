@@ -91,8 +91,8 @@ export function getBezierPath(
         if (j === 0 && i > 0) continue; // Skip duplicates
         path.push(point);
       }
-    } else {
-      // Cubic curve (default)
+    } else if (pointType === 'cubic') {
+      // Cubic curve
       // Default handle positions if not specified
       const startHandleX = startPoint.handleX !== undefined 
         ? startPoint.handleX 
@@ -179,8 +179,8 @@ export function getTemperatureAtTime(
     );
     
     return minTemp + point.y * (maxTemp - minTemp);
-  } else {
-    // Cubic curve (default)
+  } else if (pointType === 'cubic') {
+    // Cubic curve
     // Default handle positions if not specified
     const startHandleX = startPoint.handleX !== undefined 
       ? startPoint.handleX 
@@ -209,5 +209,9 @@ export function getTemperatureAtTime(
     
     // Convert normalized temperature to actual temperature
     return minTemp + point.y * (maxTemp - minTemp);
+  } else {
+    // Fallback to linear if type is not recognized
+    const normalizedTemp = startPoint.y + (endPoint.y - startPoint.y) * segmentProgress;
+    return minTemp + normalizedTemp * (maxTemp - minTemp);
   }
 }
