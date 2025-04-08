@@ -138,6 +138,31 @@ const Index = () => {
     }
   };
   
+  const handleStopZone = async (zoneId: string) => {
+    try {
+      const zoneControllers = controllers.filter(c => c.zoneId === zoneId);
+      
+      for (const controller of zoneControllers) {
+        if (controller.isRunning) {
+          await api.stopController(controller.id);
+        }
+      }
+      
+      refetchControllers();
+      
+      toast({
+        title: "Zone Stopped",
+        description: `All controllers in ${zones.find(z => z.id === zoneId)?.name || 'zone'} have been stopped`
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to stop zone controllers",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const openProfileDialog = (controller: Controller) => {
     setSelectedController(controller);
     setProfileDialogOpen(true);
@@ -322,6 +347,7 @@ const Index = () => {
                           profiles={profiles}
                           onUpdateAll={handleUpdateAllInZone}
                           onApplyProfileToZone={handleApplyProfileToZone}
+                          onStopZone={handleStopZone}
                         />
                       </div>
                       

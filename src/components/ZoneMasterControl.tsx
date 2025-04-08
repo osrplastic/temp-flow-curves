@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -13,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Play, Thermometer, Clock } from 'lucide-react';
+import { ChevronDown, Play, Thermometer, Clock, Square } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
@@ -21,6 +20,7 @@ interface ZoneMasterControlProps {
   profiles?: TemperatureProfile[];
   onUpdateAll: (zoneId: string, targetTemp: number) => void;
   onApplyProfileToZone?: (zoneId: string, profileId: string) => void;
+  onStopZone?: (zoneId: string) => void;
 }
 
 const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({ 
@@ -28,7 +28,8 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
   controllers,
   profiles,
   onUpdateAll,
-  onApplyProfileToZone
+  onApplyProfileToZone,
+  onStopZone
 }) => {
   const [targetTemp, setTargetTemp] = useState(50);
   const [inputValue, setInputValue] = useState('50');
@@ -39,11 +40,9 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
   const [isZoneActive, setIsZoneActive] = useState(false);
   const [progressPercentage, setProgressPercentage] = useState(0);
   
-  // Find min and max temperatures across all controllers in this zone
   const minTemp = Math.min(...controllers.map(c => c.minTemp));
   const maxTemp = Math.max(...controllers.map(c => c.maxTemp));
   
-  // Calculate average temperature of all controllers in this zone
   useEffect(() => {
     if (controllers.length === 0) return;
     
@@ -51,11 +50,9 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     const avg = total / controllers.length;
     setAverageTemp(Math.round(avg * 10) / 10);
     
-    // Check if any controller in the zone is running
     const anyControllerRunning = controllers.some(c => c.isRunning);
     setIsZoneActive(anyControllerRunning);
     
-    // Find the first running profile
     const runningController = controllers.find(c => c.isRunning && c.currentProfile);
     if (runningController && runningController.currentProfile) {
       setActiveProfileId(runningController.currentProfile);
@@ -64,7 +61,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     }
   }, [controllers]);
   
-  // Timer for tracking elapsed and remaining time
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -72,7 +68,7 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
       const activeProfile = profiles?.find(p => p.id === activeProfileId);
       
       if (activeProfile) {
-        const totalDuration = activeProfile.duration * 60; // convert minutes to seconds
+        const totalDuration = activeProfile.duration * 60;
         
         interval = setInterval(() => {
           setElapsedTime(prev => {
@@ -80,7 +76,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
             const newRemaining = Math.max(0, totalDuration - newElapsed);
             setRemainingTime(newRemaining);
             
-            // Calculate and update progress percentage
             const progress = (newElapsed / totalDuration) * 100;
             setProgressPercentage(Math.min(100, progress));
             
@@ -89,7 +84,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
         }, 1000);
       }
     } else {
-      // Reset times and progress when zone becomes inactive
       setElapsedTime(0);
       setRemainingTime(0);
       setProgressPercentage(0);
@@ -130,6 +124,14 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     onUpdateAll(zone.id, targetTemp);
   };
   
+  const handleStopZone = () => {
+    onUpdateAll(zone.id, 0);
+    
+    if (onStopZone) {
+      onStopZone(zone.id);
+    }
+  };
+  
   const getTempColor = (temp: number) => {
     const range = maxTemp - minTemp;
     const ratio = (temp - minTemp) / range;
@@ -139,7 +141,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     return 'text-red-400';
   };
 
-  // Calculate temperature color intensity for heat press visualization
   const getHeatIntensity = (controllerIndex: number) => {
     if (controllers.length === 0 || !controllers[controllerIndex]) return 'bg-gray-200';
     
@@ -154,14 +155,12 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     return 'bg-red-600';
   };
   
-  // Format time display (MM:SS)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Map for consistent controller positions
   const controllerPositionMap = [
     { position: 'Top-Front', label: 'Nr.1' },
     { position: 'Bottom-Front', label: 'Nr.2' },
@@ -169,7 +168,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
     { position: 'Bottom-Back', label: 'Nr.4' }
   ];
   
-  // Get active profile name
   const activeProfileName = activeProfileId
     ? profiles?.find(p => p.id === activeProfileId)?.name || 'Unknown Profile'
     : null;
@@ -185,7 +183,6 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
-        {/* Timer Display */}
         {isZoneActive && (
           <div className="space-y-2 bg-secondary/30 rounded-md px-3 py-2 mb-2">
             <div className="flex items-center justify-between text-sm">
@@ -206,12 +203,10 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
               </div>
             </div>
             
-            {/* Progress Bar */}
             <Progress value={progressPercentage} className="h-2" />
           </div>
         )}
       
-        {/* Heat Press Visualization */}
         <div className="mb-4 relative">
           <div className="border border-gray-300 rounded-md bg-gray-100 p-2">
             <div className="text-center text-xs text-gray-500 mb-1">Heat Press Visualization</div>
@@ -285,9 +280,18 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
           </div>
         </div>
         
-        {profiles && profiles.length > 0 && onApplyProfileToZone && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Apply profile to all controllers:</span>
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleStopZone} 
+            className="gap-1"
+          >
+            <Square className="h-3 w-3" />
+            Stop
+          </Button>
+          
+          {profiles && profiles.length > 0 && onApplyProfileToZone && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1">
@@ -306,8 +310,8 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
