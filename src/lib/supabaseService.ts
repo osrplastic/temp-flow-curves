@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TemperatureProfile, HeatZone, Controller, ControlPoint } from './types';
 import type { Database } from '@/integrations/supabase/types';
 import { Json } from '@/integrations/supabase/types';
+import { defaultProfiles } from './data/defaultData';
 
 // Supabase Service
 class SupabaseService {
@@ -14,9 +14,40 @@ class SupabaseService {
       
     if (error) {
       console.error('Error fetching profiles:', error);
-      return [];
+      
+      // If fetching fails, return default profiles
+      return defaultProfiles;
     }
     
+    // If no profiles are found in the database, initialize with default profiles
+    if (data.length === 0) {
+      console.log('No profiles found in database, initializing with defaults');
+      
+      try {
+        await this.initializeDefaultProfiles();
+        
+        // Re-fetch after initialization
+        const { data: newData, error: newError } = await supabase
+          .from('temperature_profiles')
+          .select('*');
+          
+        if (newError) {
+          console.error('Error fetching profiles after initialization:', newError);
+          return defaultProfiles;
+        }
+        
+        return this.parseProfilesFromDatabase(newData);
+      } catch (initError) {
+        console.error('Error initializing default profiles:', initError);
+        return defaultProfiles;
+      }
+    }
+    
+    return this.parseProfilesFromDatabase(data);
+  }
+  
+  // Helper method to parse profiles from database
+  private parseProfilesFromDatabase(data: any[]): TemperatureProfile[] {
     return data.map(profile => ({
       id: profile.id,
       name: profile.name,
@@ -26,6 +57,28 @@ class SupabaseService {
       createdAt: profile.created_at,
       updatedAt: profile.updated_at
     }));
+  }
+
+  // Initialize database with default profiles
+  private async initializeDefaultProfiles(): Promise<void> {
+    const { error } = await supabase
+      .from('temperature_profiles')
+      .upsert(
+        defaultProfiles.map(profile => ({
+          id: profile.id,
+          name: profile.name,
+          description: profile.description,
+          control_points: profile.controlPoints as unknown as Json,
+          duration: profile.duration,
+          created_at: profile.createdAt,
+          updated_at: profile.updatedAt
+        }))
+      );
+      
+    if (error) {
+      console.error('Error initializing default profiles:', error);
+      throw error;
+    }
   }
 
   // Helper method to parse control points from JSON
