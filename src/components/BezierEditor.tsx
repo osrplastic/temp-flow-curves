@@ -4,7 +4,8 @@ import { ControlPoint } from '@/lib/api';
 import { getBezierPath } from '@/lib/bezier';
 import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Circle, Square, Triangle } from 'lucide-react';
+import { Circle, Square, Triangle, Scissors, PenTool } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface BezierEditorProps {
   controlPoints: ControlPoint[];
@@ -116,16 +117,20 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           y: normalizedCoords.y
         };
         
-        // Update handles for smooth curves
-        updateHandlesForSmoothCurve(newPoints, activePointIndex);
+        // Update handles for smooth curves if the point has a smooth curve type
+        if (newPoints[activePointIndex].curveType === 'smooth') {
+          updateHandlesForSmoothCurve(newPoints, activePointIndex);
+        }
       }
     } else if (activeHandle === 'handle') {
-      // Update handle position
-      newPoints[activePointIndex] = {
-        ...newPoints[activePointIndex],
-        handleX: normalizedCoords.x,
-        handleY: normalizedCoords.y
-      };
+      // Update handle position only if the point has a sharp curve type
+      if (newPoints[activePointIndex].curveType === 'sharp') {
+        newPoints[activePointIndex] = {
+          ...newPoints[activePointIndex],
+          handleX: normalizedCoords.x,
+          handleY: normalizedCoords.y
+        };
+      }
     }
     
     onChange(newPoints);
@@ -146,18 +151,22 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     const nextDiffY = next.y - curr.y;
     
     // Handle before current point
-    points[index - 1] = {
-      ...prev,
-      handleX: prev.x + prevDiffX / 3,
-      handleY: prev.y + prevDiffY / 3
-    };
+    if (prev.curveType === 'smooth') {
+      points[index - 1] = {
+        ...prev,
+        handleX: prev.x + prevDiffX / 3,
+        handleY: prev.y + prevDiffY / 3
+      };
+    }
     
     // Handle after current point
-    points[index] = {
-      ...curr,
-      handleX: curr.x + nextDiffX / 3,
-      handleY: curr.y + nextDiffY / 3
-    };
+    if (curr.curveType === 'smooth') {
+      points[index] = {
+        ...curr,
+        handleX: curr.x + nextDiffX / 3,
+        handleY: curr.y + nextDiffY / 3
+      };
+    }
   };
   
   // Handle mouse up
@@ -190,7 +199,8 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     const newPoint: ControlPoint = {
       x: normX,
       y: normY,
-      type: 'circle' // Default type for new points
+      type: 'circle', // Default type for new points
+      curveType: 'smooth' // Default curve type for new points
     };
     
     // Insert the new point
@@ -240,6 +250,24 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
       ...newPoints[index],
       type: type as 'circle' | 'square' | 'triangle'
     };
+    
+    onChange(newPoints);
+  };
+
+  // Handle curve type change for a control point
+  const handleCurveTypeChange = (index: number, curveType: 'smooth' | 'sharp') => {
+    if (readonly) return;
+    
+    const newPoints = [...controlPoints];
+    newPoints[index] = {
+      ...newPoints[index],
+      curveType: curveType
+    };
+    
+    // If changing to smooth, update the handles
+    if (curveType === 'smooth' && index > 0 && index < controlPoints.length - 1) {
+      updateHandlesForSmoothCurve(newPoints, index);
+    }
     
     onChange(newPoints);
   };
@@ -359,19 +387,43 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   return (
     <div className="space-y-2">
       {!readonly && activePointIndex !== null && (
-        <div className="mb-2 flex items-center gap-2 p-1 border rounded-md bg-background">
-          <span className="text-xs text-muted-foreground">Point Style:</span>
-          <ToggleGroup type="single" value={controlPoints[activePointIndex]?.type || 'circle'} onValueChange={(value) => value && handlePointTypeChange(activePointIndex, value)}>
-            <ToggleGroupItem value="circle" aria-label="Circle" size="sm">
-              <Circle className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="square" aria-label="Square" size="sm">
-              <Square className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="triangle" aria-label="Triangle" size="sm">
-              <Triangle className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+        <div className="mb-2 p-1 border rounded-md bg-background">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-xs text-muted-foreground">Point Style:</span>
+            <ToggleGroup type="single" value={controlPoints[activePointIndex]?.type || 'circle'} onValueChange={(value) => value && handlePointTypeChange(activePointIndex, value)}>
+              <ToggleGroupItem value="circle" aria-label="Circle" size="sm">
+                <Circle className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="square" aria-label="Square" size="sm">
+                <Square className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="triangle" aria-label="Triangle" size="sm">
+                <Triangle className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Curve Type:</span>
+            <RadioGroup 
+              className="flex gap-4" 
+              value={controlPoints[activePointIndex]?.curveType || 'smooth'}
+              onValueChange={(value) => handleCurveTypeChange(activePointIndex, value as 'smooth' | 'sharp')}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="smooth" id="smooth" />
+                <label htmlFor="smooth" className="flex items-center text-sm gap-1 cursor-pointer">
+                  <PenTool className="h-4 w-4" /> Smooth
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="sharp" id="sharp" />
+                <label htmlFor="sharp" className="flex items-center text-sm gap-1 cursor-pointer">
+                  <Scissors className="h-4 w-4" /> Sharp
+                </label>
+              </div>
+            </RadioGroup>
+          </div>
         </div>
       )}
       
@@ -437,8 +489,8 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
               {/* Control point */}
               {renderControlPoint(point, index)}
               
-              {/* Handle line and point (not for last point) */}
-              {index < controlPoints.length - 1 && !readonly && (
+              {/* Handle line and point (not for last point and only for sharp curves) */}
+              {index < controlPoints.length - 1 && !readonly && point.curveType === 'sharp' && (
                 <>
                   <line
                     x1={svgPoint.x}
