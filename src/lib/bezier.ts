@@ -57,25 +57,6 @@ export function getBezierPath(
       ? endPoint.handleY 
       : endPoint.y - (endPoint.y - startPoint.y) / 3;
     
-    // Adjust handles based on curve type
-    const useStartHandle = startPoint.curveType !== 'smooth';
-    const useEndHandle = endPoint.curveType !== 'smooth';
-    
-    // For smooth curves, use auto-calculated handles
-    if (!useStartHandle) {
-      const smoothStartHandleX = startPoint.x + (endPoint.x - startPoint.x) / 3;
-      const smoothStartHandleY = startPoint.y + (endPoint.y - startPoint.y) / 3;
-      startPoint.handleX = smoothStartHandleX;
-      startPoint.handleY = smoothStartHandleY;
-    }
-    
-    if (!useEndHandle) {
-      const smoothEndHandleX = endPoint.x - (endPoint.x - startPoint.x) / 3;
-      const smoothEndHandleY = endPoint.y - (endPoint.y - startPoint.y) / 3;
-      endPoint.handleX = smoothEndHandleX;
-      endPoint.handleY = smoothEndHandleY;
-    }
-    
     // Calculate points along this segment
     const segmentSteps = Math.ceil(steps * (endPoint.x - startPoint.x));
     
@@ -84,8 +65,8 @@ export function getBezierPath(
       
       const point = cubicBezier(
         { x: startPoint.x, y: startPoint.y },
-        { x: startPoint.handleX || startHandleX, y: startPoint.handleY || startHandleY },
-        { x: endPoint.handleX || endHandleX, y: endPoint.handleY || endHandleY },
+        { x: startHandleX, y: startHandleY },
+        { x: endHandleX, y: endHandleY },
         { x: endPoint.x, y: endPoint.y },
         t
       );

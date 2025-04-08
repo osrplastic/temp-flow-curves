@@ -35,9 +35,9 @@ interface ProfileFormProps {
 }
 
 const defaultControlPoints: ControlPoint[] = [
-  { x: 0, y: 0, type: 'circle', curveType: 'smooth' },
-  { x: 0.5, y: 0.5, type: 'circle', curveType: 'smooth', handleX: 0.2, handleY: 0.5 },
-  { x: 1, y: 1, type: 'circle', curveType: 'smooth' }
+  { x: 0, y: 0, type: 'circle' },
+  { x: 0.5, y: 0.5, type: 'circle', handleX: 0.2, handleY: 0.5 },
+  { x: 1, y: 1, type: 'circle' }
 ];
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ 
@@ -131,7 +131,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           <FormDescription className="text-xs text-muted-foreground">
             Drag points to adjust the temperature curve. Double-click on the curve to add points. 
             Double-click on existing points to delete them (except first and last points).
-            Select a point to change its style and curve type (smooth or sharp).
+            Select a point to change its style.
           </FormDescription>
         </div>
         
