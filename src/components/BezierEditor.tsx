@@ -143,6 +143,10 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   };
   
   const handleMouseUp = () => {
+    if (activePointIndex !== null) {
+      setSelectedPointIndex(activePointIndex);
+    }
+    
     setActivePointIndex(null);
     setActiveHandle(null);
     setIsDragging(false);
