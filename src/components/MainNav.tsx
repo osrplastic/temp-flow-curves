@@ -2,7 +2,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Thermometer, LineChart, Settings } from 'lucide-react';
+import { Thermometer, LineChart, Settings, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface MainNavProps {
   className?: string;
@@ -10,6 +11,7 @@ interface MainNavProps {
 
 const MainNav: React.FC<MainNavProps> = ({ className }) => {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   
   const navItems = [
     {
@@ -32,8 +34,12 @@ const MainNav: React.FC<MainNavProps> = ({ className }) => {
     }
   ];
   
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+  
   return (
-    <nav className={cn("flex justify-center", className)}>
+    <nav className={cn("flex justify-between items-center", className)}>
       <div className="flex space-x-2 rounded-lg overflow-hidden border border-border">
         {navItems.map((item) => (
           <Link
@@ -51,6 +57,18 @@ const MainNav: React.FC<MainNavProps> = ({ className }) => {
           </Link>
         ))}
       </div>
+      
+      <button
+        onClick={toggleTheme}
+        className="p-2 rounded-full hover:bg-muted transition-colors"
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      >
+        {theme === 'light' ? (
+          <Moon className="h-5 w-5" />
+        ) : (
+          <Sun className="h-5 w-5" />
+        )}
+      </button>
     </nav>
   );
 };
