@@ -113,6 +113,9 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           x: boundedX,
           y: normalizedCoords.y
         };
+        
+        // Update handles for smooth curves
+        updateHandlesForSmoothCurve(newPoints, activePointIndex);
       }
     } else if (activeHandle === 'handle') {
       // Update handle position
@@ -126,10 +129,103 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     onChange(newPoints);
   };
   
+  // Update handles for smooth curve at the specified point
+  const updateHandlesForSmoothCurve = (points: ControlPoint[], index: number) => {
+    if (index <= 0 || index >= points.length - 1) return;
+    
+    const prev = points[index - 1];
+    const curr = points[index];
+    const next = points[index + 1];
+    
+    // Calculate handle positions for smooth curve
+    const prevDiffX = curr.x - prev.x;
+    const prevDiffY = curr.y - prev.y;
+    const nextDiffX = next.x - curr.x;
+    const nextDiffY = next.y - curr.y;
+    
+    // Handle before current point
+    points[index - 1] = {
+      ...prev,
+      handleX: prev.x + prevDiffX / 3,
+      handleY: prev.y + prevDiffY / 3
+    };
+    
+    // Handle after current point
+    points[index] = {
+      ...curr,
+      handleX: curr.x + nextDiffX / 3,
+      handleY: curr.y + nextDiffY / 3
+    };
+  };
+  
   // Handle mouse up
   const handleMouseUp = () => {
     setActivePointIndex(null);
     setActiveHandle(null);
+  };
+  
+  // Handle double click on curve to add point
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (readonly || e.target !== e.currentTarget) return;
+    
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (!svgRect) return;
+    
+    const x = e.clientX - svgRect.left;
+    const y = e.clientY - svgRect.top;
+    const { x: normX, y: normY } = toNormalizedCoords(x, y);
+    
+    // Find where to insert the new point
+    let insertIndex = 1;
+    for (let i = 0; i < controlPoints.length - 1; i++) {
+      if (normX >= controlPoints[i].x && normX <= controlPoints[i + 1].x) {
+        insertIndex = i + 1;
+        break;
+      }
+    }
+    
+    // Create the new point
+    const newPoint: ControlPoint = {
+      x: normX,
+      y: normY
+    };
+    
+    // Insert the new point
+    const newPoints = [
+      ...controlPoints.slice(0, insertIndex),
+      newPoint,
+      ...controlPoints.slice(insertIndex)
+    ];
+    
+    // Update handles for smooth curves
+    updateHandlesForSmoothCurve(newPoints, insertIndex);
+    if (insertIndex > 0) {
+      updateHandlesForSmoothCurve(newPoints, insertIndex - 1);
+    }
+    
+    onChange(newPoints);
+  };
+  
+  // Handle double click on control point to delete it
+  const handlePointDoubleClick = (index: number, e: React.MouseEvent) => {
+    if (readonly) return;
+    e.stopPropagation();
+    
+    // Don't allow deleting first or last points
+    if (index === 0 || index === controlPoints.length - 1) return;
+    
+    // Remove the point
+    const newPoints = [
+      ...controlPoints.slice(0, index),
+      ...controlPoints.slice(index + 1)
+    ];
+    
+    // Update handles for smooth curves at the connection
+    if (index > 0 && index < newPoints.length) {
+      updateHandlesForSmoothCurve(newPoints, index - 1);
+    }
+    
+    onChange(newPoints);
   };
   
   // Generate the SVG path for the Bezier curve
@@ -204,6 +300,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
     >
       {/* Grid lines */}
       {[0.2, 0.4, 0.6, 0.8].map(y => {
@@ -266,6 +363,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
                 !readonly && "cursor-move"
               )}
               onMouseDown={(e) => handlePointMouseDown(index, e)}
+              onDoubleClick={(e) => handlePointDoubleClick(index, e)}
             />
             
             {/* Handle line and point (not for last point) */}
