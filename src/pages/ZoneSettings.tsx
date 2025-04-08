@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api, HeatZone } from '@/lib/api';
 
@@ -20,12 +20,56 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Form schema for creating a zone
+const zoneFormSchema = z.object({
+  name: z.string().min(1, "Zone name is required"),
+  description: z.string().optional(),
+});
+
+type ZoneFormValues = z.infer<typeof zoneFormSchema>;
+
 const ZoneSettings = () => {
   const { toast } = useToast();
   const [zones, setZones] = useState<HeatZone[]>([]);
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // Form for creating a new zone
+  const form = useForm<ZoneFormValues>({
+    resolver: zodResolver(zoneFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
 
   useEffect(() => {
     loadZones();
@@ -67,6 +111,36 @@ const ZoneSettings = () => {
       });
     } finally {
       setDeleteZoneId(null);
+    }
+  };
+
+  const handleCreateZone = async (data: ZoneFormValues) => {
+    try {
+      await api.createZone({
+        name: data.name,
+        description: data.description,
+      });
+      
+      toast({
+        title: "Zone Created",
+        description: "The new zone has been successfully created",
+        variant: "default"
+      });
+      
+      // Reset form
+      form.reset();
+      
+      // Close dialog
+      setIsCreateDialogOpen(false);
+      
+      // Refresh zones list
+      loadZones();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create zone",
+        variant: "destructive"
+      });
     }
   };
 
@@ -144,21 +218,77 @@ const ZoneSettings = () => {
             </CardContent>
             <CardFooter>
               <Button
-                onClick={() => {
-                  toast({
-                    title: "Create Zone",
-                    description: "Zone creation functionality will be implemented in a future update",
-                  });
-                }}
+                onClick={() => setIsCreateDialogOpen(true)}
                 className="ml-auto"
               >
-                Create New Zone
+                <Plus className="mr-2 h-4 w-4" /> Create New Zone
               </Button>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
       
+      {/* Create Zone Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Zone</DialogTitle>
+            <DialogDescription>
+              Add a new heating zone to your system.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleCreateZone)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zone Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Living Room" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      A descriptive name for your heating zone
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="North side of the house, includes kitchen and dining area" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide additional details about this zone
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create Zone</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Zone Alert Dialog */}
       <AlertDialog open={!!deleteZoneId} onOpenChange={(open) => !open && setDeleteZoneId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

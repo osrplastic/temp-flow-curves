@@ -40,6 +40,10 @@ class StorageService {
   async deleteZone(id: string): Promise<void> {
     return zoneStorage.deleteZone(id);
   }
+  
+  async createZone(zone: Omit<HeatZone, 'id'>): Promise<HeatZone> {
+    return zoneStorage.createZone(zone);
+  }
 }
 
 export const storageService = new StorageService();

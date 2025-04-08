@@ -15,6 +15,10 @@ class ZoneStorage {
   async deleteZone(id: string): Promise<void> {
     return supabaseService.deleteZone(id);
   }
+  
+  async createZone(zone: Omit<HeatZone, 'id'>): Promise<HeatZone> {
+    return supabaseService.createZone(zone);
+  }
 }
 
 export const zoneStorage = new ZoneStorage();

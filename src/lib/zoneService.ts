@@ -28,6 +28,16 @@ export const zoneService = {
     return controllers.filter(controller => controller.zoneId === zoneId);
   },
   
+  // Create a new zone
+  createZone: async (zone: Omit<HeatZone, 'id'>): Promise<HeatZone> => {
+    try {
+      return await storageService.createZone(zone);
+    } catch (error) {
+      console.error('Error creating zone:', error);
+      throw new Error('Failed to create zone');
+    }
+  },
+  
   // Delete a zone
   deleteZone: async (id: string): Promise<void> => {
     // Check if zone has any controllers

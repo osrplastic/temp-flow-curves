@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { TemperatureProfile, HeatZone, Controller, ControlPoint } from './types';
 import type { Database } from '@/integrations/supabase/types';
@@ -103,6 +104,30 @@ class SupabaseService {
       name: zone.name,
       description: zone.description || ''
     }));
+  }
+
+  async createZone(zone: Omit<HeatZone, 'id'>): Promise<HeatZone> {
+    const { data, error } = await supabase
+      .from('heat_zones')
+      .insert([
+        {
+          name: zone.name,
+          description: zone.description || ''
+        }
+      ])
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating zone:', error);
+      throw new Error(`Failed to create zone: ${error.message}`);
+    }
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || ''
+    };
   }
 
   async saveZones(zones: HeatZone[]): Promise<void> {
