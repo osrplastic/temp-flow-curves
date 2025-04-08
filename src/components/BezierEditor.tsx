@@ -142,7 +142,17 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     onChange(newPoints);
   };
   
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent | React.TouchEvent) => {
+    if (activePointIndex !== null) {
+      setSelectedPointIndex(activePointIndex);
+    }
+    
+    setActivePointIndex(null);
+    setActiveHandle(null);
+    setIsDragging(false);
+  };
+  
+  const handleSvgMouseLeave = () => {
     if (activePointIndex !== null) {
       setSelectedPointIndex(activePointIndex);
     }
@@ -201,6 +211,75 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     if (!isDragging) {
       setSelectedPointIndex(null);
     }
+  };
+  
+  const handleTouchStart = (index: number, handle: 'point' | 'handle', e: React.TouchEvent) => {
+    if (readonly) return;
+    e.stopPropagation();
+    
+    setActivePointIndex(index);
+    setActiveHandle(handle);
+    setIsDragging(true);
+    setSelectedPointIndex(index);
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (readonly || activePointIndex === null || !activeHandle) return;
+    
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (!svgRect || !touch) return;
+    
+    const x = touch.clientX - svgRect.left;
+    const y = touch.clientY - svgRect.top;
+    const normalizedCoords = toNormalizedCoords(x, y);
+    
+    const newPoints = [...controlPoints];
+    
+    if (activeHandle === 'point') {
+      if (activePointIndex === 0) {
+        newPoints[activePointIndex] = {
+          ...newPoints[activePointIndex],
+          y: normalizedCoords.y
+        };
+      } else if (activePointIndex === newPoints.length - 1) {
+        newPoints[activePointIndex] = {
+          ...newPoints[activePointIndex],
+          y: normalizedCoords.y
+        };
+      } else {
+        const prevPoint = newPoints[activePointIndex - 1];
+        const nextPoint = newPoints[activePointIndex + 1];
+        
+        const boundedX = Math.max(prevPoint.x, Math.min(nextPoint.x, normalizedCoords.x));
+        
+        newPoints[activePointIndex] = {
+          ...newPoints[activePointIndex],
+          x: boundedX,
+          y: normalizedCoords.y
+        };
+      }
+    } else if (activeHandle === 'handle') {
+      newPoints[activePointIndex] = {
+        ...newPoints[activePointIndex],
+        handleX: normalizedCoords.x,
+        handleY: normalizedCoords.y
+      };
+    }
+    
+    onChange(newPoints);
+  };
+  
+  const handleTouchEnd = () => {
+    if (activePointIndex !== null) {
+      setSelectedPointIndex(activePointIndex);
+    }
+    
+    setActivePointIndex(null);
+    setActiveHandle(null);
+    setIsDragging(false);
   };
   
   const changePointType = (type: ControlPointType) => {
@@ -326,9 +405,11 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         className={cn("w-full h-64 touch-none", className)}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleSvgMouseLeave}
         onClick={handleSvgClick}
         onDoubleClick={handleDoubleClick}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{ padding: '5px' }}
       >
         <rect
@@ -400,6 +481,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
                 )}
                 onMouseDown={(e) => handlePointMouseDown(index, e)}
                 onClick={(e) => handlePointClick(index, e)}
+                onTouchStart={(e) => handleTouchStart(index, 'point', e)}
                 data-point-id={index}
               />
               
@@ -421,6 +503,7 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
                       !readonly && "cursor-move"
                     )}
                     onMouseDown={(e) => handleHandleMouseDown(index, e)}
+                    onTouchStart={(e) => handleTouchStart(index, 'handle', e)}
                   />
                 </>
               )}
