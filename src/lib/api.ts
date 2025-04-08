@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { z } from "zod";
+import { promises as fs } from 'fs';
+import path from 'path';
 
 // Types
 export type TemperatureProfile = {
@@ -41,13 +43,11 @@ export type Controller = {
   zoneId: string; // Added zoneId to associate controllers with zones
 };
 
-// Local storage keys
-const PROFILES_KEY = 'temp-controller-profiles';
-const CONTROLLERS_KEY = 'temp-controllers';
-const ZONES_KEY = 'temp-heat-zones';
-
-// Mock API server
-const app = new Hono();
+// JSON file paths
+const DATA_DIR = 'data';
+const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+const CONTROLLERS_FILE = path.join(DATA_DIR, 'controllers.json');
+const ZONES_FILE = path.join(DATA_DIR, 'zones.json');
 
 // Default profiles
 const defaultProfiles: TemperatureProfile[] = [
@@ -225,40 +225,80 @@ const defaultControllers: Controller[] = [
   }
 ];
 
-// Initialize local storage if empty
-const initializeStorage = () => {
-  if (!localStorage.getItem(PROFILES_KEY)) {
-    localStorage.setItem(PROFILES_KEY, JSON.stringify(defaultProfiles));
-  }
-  if (!localStorage.getItem(CONTROLLERS_KEY)) {
-    localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(defaultControllers));
-  }
-  if (!localStorage.getItem(ZONES_KEY)) {
-    localStorage.setItem(ZONES_KEY, JSON.stringify(defaultZones));
+// Mock API server
+const app = new Hono();
+
+// Initialize storage if files don't exist
+const initializeStorage = async () => {
+  try {
+    // Create data directory if it doesn't exist
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+    } catch (err) {
+      console.error('Error creating data directory:', err);
+    }
+
+    // Check if profiles file exists, if not create it with defaults
+    try {
+      await fs.access(PROFILES_FILE);
+    } catch {
+      await fs.writeFile(PROFILES_FILE, JSON.stringify(defaultProfiles, null, 2));
+    }
+
+    // Check if controllers file exists, if not create it with defaults
+    try {
+      await fs.access(CONTROLLERS_FILE);
+    } catch {
+      await fs.writeFile(CONTROLLERS_FILE, JSON.stringify(defaultControllers, null, 2));
+    }
+
+    // Check if zones file exists, if not create it with defaults
+    try {
+      await fs.access(ZONES_FILE);
+    } catch {
+      await fs.writeFile(ZONES_FILE, JSON.stringify(defaultZones, null, 2));
+    }
+  } catch (error) {
+    console.error('Error initializing storage:', error);
   }
 };
 
 // Helper to get items from storage
-const getFromStorage = <T>(key: string): T[] => {
-  initializeStorage();
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
+const getFromStorage = async <T>(filePath: string): Promise<T[]> => {
+  try {
+    await initializeStorage();
+    const data = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error reading from ${filePath}:`, error);
+    
+    // Return defaults based on file path
+    if (filePath === PROFILES_FILE) return defaultProfiles as unknown as T[];
+    if (filePath === CONTROLLERS_FILE) return defaultControllers as unknown as T[];
+    if (filePath === ZONES_FILE) return defaultZones as unknown as T[];
+    
+    return [];
+  }
 };
 
 // Helper to save items to storage
-const saveToStorage = <T>(key: string, data: T[]): void => {
-  localStorage.setItem(key, JSON.stringify(data));
+const saveToStorage = async <T>(filePath: string, data: T[]): Promise<void> => {
+  try {
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error(`Error writing to ${filePath}:`, error);
+  }
 };
 
 // API endpoints for profiles
-app.get('/api/profiles', (c) => {
-  const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+app.get('/api/profiles', async (c) => {
+  const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
   return c.json(profiles);
 });
 
-app.get('/api/profiles/:id', (c) => {
+app.get('/api/profiles/:id', async (c) => {
   const id = c.req.param('id');
-  const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+  const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
   const profile = profiles.find(p => p.id === id);
   
   if (!profile) {
@@ -287,7 +327,7 @@ app.post('/api/profiles', async (c) => {
   
   try {
     const validated = profileSchema.parse(data);
-    const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+    const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
     
     const newProfile: TemperatureProfile = {
       id: `profile-${Date.now()}`,
@@ -306,7 +346,7 @@ app.post('/api/profiles', async (c) => {
     };
     
     profiles.push(newProfile);
-    saveToStorage(PROFILES_KEY, profiles);
+    await saveToStorage(PROFILES_FILE, profiles);
     
     return c.json(newProfile, 201);
   } catch (error) {
@@ -334,7 +374,7 @@ app.put('/api/profiles/:id', async (c) => {
   
   try {
     const validated = profileSchema.parse(data);
-    const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+    const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
     const index = profiles.findIndex(p => p.id === id);
     
     if (index === -1) {
@@ -356,7 +396,7 @@ app.put('/api/profiles/:id', async (c) => {
       updatedAt: new Date().toISOString()
     };
     
-    saveToStorage(PROFILES_KEY, profiles);
+    await saveToStorage(PROFILES_FILE, profiles);
     
     return c.json(profiles[index]);
   } catch (error) {
@@ -364,28 +404,28 @@ app.put('/api/profiles/:id', async (c) => {
   }
 });
 
-app.delete('/api/profiles/:id', (c) => {
+app.delete('/api/profiles/:id', async (c) => {
   const id = c.req.param('id');
-  const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+  const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
   const newProfiles = profiles.filter(p => p.id !== id);
   
   if (profiles.length === newProfiles.length) {
     return c.json({ error: 'Profile not found' }, 404);
   }
   
-  saveToStorage(PROFILES_KEY, newProfiles);
+  await saveToStorage(PROFILES_FILE, newProfiles);
   return c.json({ success: true });
 });
 
 // API endpoints for zones
-app.get('/api/zones', (c) => {
-  const zones = getFromStorage<HeatZone>(ZONES_KEY);
+app.get('/api/zones', async (c) => {
+  const zones = await getFromStorage<HeatZone>(ZONES_FILE);
   return c.json(zones);
 });
 
-app.get('/api/zones/:id', (c) => {
+app.get('/api/zones/:id', async (c) => {
   const id = c.req.param('id');
-  const zones = getFromStorage<HeatZone>(ZONES_KEY);
+  const zones = await getFromStorage<HeatZone>(ZONES_FILE);
   const zone = zones.find(z => z.id === id);
   
   if (!zone) {
@@ -395,23 +435,23 @@ app.get('/api/zones/:id', (c) => {
   return c.json(zone);
 });
 
-app.get('/api/zones/:id/controllers', (c) => {
+app.get('/api/zones/:id/controllers', async (c) => {
   const zoneId = c.req.param('id');
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   const zoneControllers = controllers.filter(controller => controller.zoneId === zoneId);
   
   return c.json(zoneControllers);
 });
 
 // API endpoints for controllers
-app.get('/api/controllers', (c) => {
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+app.get('/api/controllers', async (c) => {
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   return c.json(controllers);
 });
 
-app.get('/api/controllers/:id', (c) => {
+app.get('/api/controllers/:id', async (c) => {
   const id = c.req.param('id');
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   const controller = controllers.find(c => c.id === id);
   
   if (!controller) {
@@ -425,7 +465,7 @@ app.patch('/api/controllers/:id', async (c) => {
   const id = c.req.param('id');
   const data = await c.req.json();
   
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   const index = controllers.findIndex(c => c.id === id);
   
   if (index === -1) {
@@ -438,7 +478,7 @@ app.patch('/api/controllers/:id', async (c) => {
     lastUpdated: new Date().toISOString()
   };
   
-  saveToStorage(CONTROLLERS_KEY, controllers);
+  await saveToStorage(CONTROLLERS_FILE, controllers);
   
   return c.json(controllers[index]);
 });
@@ -447,7 +487,7 @@ app.post('/api/controllers/:id/start', async (c) => {
   const id = c.req.param('id');
   const { profileId } = await c.req.json();
   
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   const index = controllers.findIndex(c => c.id === id);
   
   if (index === -1) {
@@ -455,7 +495,7 @@ app.post('/api/controllers/:id/start', async (c) => {
   }
   
   if (profileId) {
-    const profiles = getFromStorage<TemperatureProfile>(PROFILES_KEY);
+    const profiles = await getFromStorage<TemperatureProfile>(PROFILES_FILE);
     const profile = profiles.find(p => p.id === profileId);
     
     if (!profile) {
@@ -476,7 +516,7 @@ app.post('/api/controllers/:id/start', async (c) => {
     };
   }
   
-  saveToStorage(CONTROLLERS_KEY, controllers);
+  await saveToStorage(CONTROLLERS_FILE, controllers);
   
   return c.json(controllers[index]);
 });
@@ -497,7 +537,7 @@ app.post('/api/controllers', async (c) => {
   
   try {
     const validated = controllerSchema.parse(data);
-    const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+    const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
     
     const newController: Controller = {
       id: `controller-${Date.now()}`,
@@ -515,7 +555,7 @@ app.post('/api/controllers', async (c) => {
     };
     
     controllers.push(newController);
-    saveToStorage(CONTROLLERS_KEY, controllers);
+    await saveToStorage(CONTROLLERS_FILE, controllers);
     
     return c.json(newController, 201);
   } catch (error) {
@@ -523,10 +563,10 @@ app.post('/api/controllers', async (c) => {
   }
 });
 
-app.post('/api/controllers/:id/stop', (c) => {
+app.post('/api/controllers/:id/stop', async (c) => {
   const id = c.req.param('id');
   
-  const controllers = getFromStorage<Controller>(CONTROLLERS_KEY);
+  const controllers = await getFromStorage<Controller>(CONTROLLERS_FILE);
   const index = controllers.findIndex(c => c.id === id);
   
   if (index === -1) {
@@ -539,7 +579,7 @@ app.post('/api/controllers/:id/stop', (c) => {
     lastUpdated: new Date().toISOString()
   };
   
-  saveToStorage(CONTROLLERS_KEY, controllers);
+  await saveToStorage(CONTROLLERS_FILE, controllers);
   
   return c.json(controllers[index]);
 });
