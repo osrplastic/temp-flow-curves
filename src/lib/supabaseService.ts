@@ -34,10 +34,28 @@ class SupabaseService {
     
     try {
       if (typeof controlPointsJson === 'string') {
-        return JSON.parse(controlPointsJson);
+        return JSON.parse(controlPointsJson) as ControlPoint[];
       }
       
-      return controlPointsJson as ControlPoint[];
+      // First cast to unknown, then to the specific type
+      if (Array.isArray(controlPointsJson)) {
+        return controlPointsJson.map(point => {
+          if (typeof point === 'object' && point !== null) {
+            // Ensure each point has the required properties
+            return {
+              x: typeof point.x === 'number' ? point.x : 0,
+              y: typeof point.y === 'number' ? point.y : 0,
+              type: (point.type as ControlPoint['type']) || 'linear',
+              handleX: typeof point.handleX === 'number' ? point.handleX : undefined,
+              handleY: typeof point.handleY === 'number' ? point.handleY : undefined
+            };
+          }
+          return { x: 0, y: 0, type: 'linear' };
+        });
+      }
+      
+      console.error('Control points data is not an array:', controlPointsJson);
+      return [];
     } catch (error) {
       console.error('Error parsing control points:', error);
       return [];
