@@ -52,8 +52,7 @@ const ControlPoints: React.FC<ControlPointsProps> = ({
               cy={svgPoint.y}
               r={isSelected ? 7 : 5}
               className={cn(
-                "fill-primary stroke-background stroke-1",
-                isSelected && "fill-accent",
+                isSelected ? "bezier-control-point-selected" : "bezier-control-point",
                 isSelectable(index, controlPoints.length) && !readonly && "cursor-pointer"
               )}
               onMouseDown={(e) => handlePointMouseDown(index, e)}
@@ -76,7 +75,7 @@ const ControlPoints: React.FC<ControlPointsProps> = ({
                   cy={svgHandle.y}
                   r={3}
                   className={cn(
-                    "fill-accent stroke-primary stroke-1",
+                    "bezier-handle-point",
                     !readonly && "cursor-move"
                   )}
                   onMouseDown={(e) => handleHandleMouseDown(index, e)}

@@ -78,7 +78,7 @@
 
 /* Bezier editor styles */
 .bezier-curve-path {
-  stroke: hsl(var(--primary));
+  stroke: theme('colors.blue.500');
   stroke-width: 2;
   fill: none;
   stroke-linecap: round;
@@ -86,7 +86,25 @@
 }
 
 .bezier-control-line {
-  stroke: hsl(var(--muted-foreground) / 0.6);
+  stroke: theme('colors.blue.300');
   stroke-width: 1;
   stroke-dasharray: 2;
+}
+
+.bezier-control-point {
+  fill: theme('colors.blue.500');
+  stroke: white;
+  stroke-width: 1;
+}
+
+.bezier-control-point-selected {
+  fill: theme('colors.blue.600');
+  stroke: white;
+  stroke-width: 2;
+}
+
+.bezier-handle-point {
+  fill: theme('colors.blue.300');
+  stroke: theme('colors.blue.500');
+  stroke-width: 1;
 }
