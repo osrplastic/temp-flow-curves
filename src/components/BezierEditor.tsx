@@ -256,6 +256,11 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     return (point.type as ControlPointType) || 'linear';
   };
   
+  // Check if a point is selectable (not first or last)
+  const isSelectable = (index: number) => {
+    return index > 0 && index < controlPoints.length - 1;
+  };
+  
   // Generate the SVG path for the Bezier curve
   const pathPoints = getBezierPath(controlPoints);
   let pathData = '';
@@ -394,14 +399,14 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
                 className={cn(
                   "fill-primary stroke-background stroke-1",
                   isSelected && "fill-accent",
-                  !readonly && "cursor-pointer"
+                  isSelectable(index) && !readonly && "cursor-pointer"
                 )}
                 onMouseDown={(e) => handlePointMouseDown(index, e)}
                 onClick={(e) => handlePointClick(index, e)}
               />
               
               {/* Handle line and point (not for first and last points) */}
-              {index > 0 && index < controlPoints.length - 1 && !readonly && pointType !== 'linear' && (
+              {isSelectable(index) && !readonly && pointType !== 'linear' && (
                 <>
                   <line
                     x1={svgPoint.x}
@@ -433,9 +438,16 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
         {renderTimeLabels()}
       </svg>
       
-      {!readonly && selectedPointIndex !== null && selectedPointIndex > 0 && selectedPointIndex < controlPoints.length - 1 && (
+      {!readonly && (
         <div className="flex justify-center space-x-2">
-          <ToggleGroup type="single" value={getSelectedPointType()} onValueChange={(value) => value && changePointType(value as ControlPointType)}>
+          <ToggleGroup 
+            type="single" 
+            value={getSelectedPointType()} 
+            onValueChange={(value) => value && changePointType(value as ControlPointType)}
+            className={cn(
+              selectedPointIndex === null || !isSelectable(selectedPointIndex) ? "opacity-50 pointer-events-none" : ""
+            )}
+          >
             <ToggleGroupItem value="linear">Linear</ToggleGroupItem>
             <ToggleGroupItem value="quadratic">Quadratic</ToggleGroupItem>
             <ToggleGroupItem value="cubic">Cubic</ToggleGroupItem>
