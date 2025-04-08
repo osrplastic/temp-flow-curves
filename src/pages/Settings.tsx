@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainNav from '@/components/MainNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Trash2, Save, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useTheme } from '@/components/ThemeProvider';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -23,24 +23,25 @@ import {
 
 const Settings = () => {
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [refreshRate, setRefreshRate] = useState(1000);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(theme === 'dark');
   const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius');
   const [soundEnabled, setSoundEnabled] = useState(true);
   
-  // Handle save settings
+  useEffect(() => {
+    setTheme(darkMode ? 'dark' : 'light');
+  }, [darkMode, setTheme]);
+  
   const handleSaveSettings = () => {
-    // In a real app, this would save to localStorage or a backend
     toast({
       title: "Settings Saved",
       description: "Your preferences have been updated"
     });
   };
   
-  // Handle reset all data
   const handleResetData = () => {
-    // Clear localStorage
     localStorage.clear();
     
     toast({
@@ -49,7 +50,6 @@ const Settings = () => {
       variant: "destructive"
     });
     
-    // Reload the page to get fresh data
     window.location.reload();
   };
   
@@ -63,7 +63,6 @@ const Settings = () => {
       </div>
       
       <div className="grid gap-6">
-        {/* General Settings */}
         <Card>
           <CardHeader>
             <CardTitle>General Settings</CardTitle>
@@ -145,7 +144,6 @@ const Settings = () => {
           </CardFooter>
         </Card>
         
-        {/* Performance Settings */}
         <Card>
           <CardHeader>
             <CardTitle>Performance Settings</CardTitle>
@@ -181,7 +179,6 @@ const Settings = () => {
           </CardFooter>
         </Card>
         
-        {/* Data Management */}
         <Card>
           <CardHeader>
             <CardTitle>Data Management</CardTitle>
@@ -224,7 +221,6 @@ const Settings = () => {
           </CardContent>
         </Card>
         
-        {/* Simulation Settings */}
         <Card>
           <CardHeader>
             <CardTitle>About</CardTitle>
@@ -253,7 +249,6 @@ const Settings = () => {
         </Card>
       </div>
       
-      {/* Reset Data Confirmation Dialog */}
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
