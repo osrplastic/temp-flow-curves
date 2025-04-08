@@ -41,6 +41,20 @@ export const defaultProfiles: TemperatureProfile[] = [
     duration: 45,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'profile-4',
+    name: 'HDPE-10mm',
+    description: 'Optimized for 10mm HDPE material processing',
+    controlPoints: [
+      { x: 0, y: 0 },
+      { x: 0.2, y: 0.6, handleX: 0.1, handleY: 0.4 },
+      { x: 0.7, y: 0.9, handleX: 0.5, handleY: 0.85 },
+      { x: 1, y: 0.7 }
+    ],
+    duration: 90,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];
 
