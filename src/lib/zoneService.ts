@@ -1,7 +1,7 @@
-
 import { storageService } from './storageService';
 import { HeatZone, Controller } from './types';
 import { controllerService } from './controllerService';
+import { logger } from '@/logger';
 
 // Zone Service
 export const zoneService = {
@@ -33,7 +33,7 @@ export const zoneService = {
     try {
       return await storageService.createZone(zone);
     } catch (error) {
-      console.error('Error creating zone:', error);
+      logger.error('Error creating zone:', error);
       throw new Error('Failed to create zone');
     }
   },
@@ -51,7 +51,7 @@ export const zoneService = {
     try {
       await storageService.deleteZone(id);
     } catch (error) {
-      console.error('Error deleting zone:', error);
+      logger.error('Error deleting zone:', error);
       throw new Error('Failed to delete zone');
     }
   }

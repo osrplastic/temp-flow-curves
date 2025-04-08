@@ -77,3 +77,4 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 - [Github](https://github.com/osrplastic/temp-flow-curves.git)
 - [Preview](https://preview--temp-flow-curves.lovable.app/)
+- [Database](https://supabase.com/dashboard/project/venvmthhoedbetsvdewt/editor/29291?schema=public)

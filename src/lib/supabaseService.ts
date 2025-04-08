@@ -3,6 +3,7 @@ import { TemperatureProfile, HeatZone, Controller, ControlPoint } from './types'
 import type { Database } from '@/integrations/supabase/types';
 import { Json } from '@/integrations/supabase/types';
 import { defaultProfiles } from './data/defaultData';
+import { logger } from '@/logger';
 
 // Supabase Service
 class SupabaseService {
@@ -13,7 +14,7 @@ class SupabaseService {
       .select('*');
       
     if (error) {
-      console.error('Error fetching profiles:', error);
+      logger.error('Error fetching profiles:', error);
       
       // If fetching fails, return default profiles
       return defaultProfiles;
@@ -21,7 +22,7 @@ class SupabaseService {
     
     // If no profiles are found in the database, initialize with default profiles
     if (data.length === 0) {
-      console.log('No profiles found in database, initializing with defaults');
+      logger.info('No profiles found in database, initializing with defaults');
       
       try {
         await this.initializeDefaultProfiles();
@@ -32,13 +33,13 @@ class SupabaseService {
           .select('*');
           
         if (newError) {
-          console.error('Error fetching profiles after initialization:', newError);
+          logger.error('Error fetching profiles after initialization:', newError);
           return defaultProfiles;
         }
         
         return this.parseProfilesFromDatabase(newData);
       } catch (initError) {
-        console.error('Error initializing default profiles:', initError);
+        logger.error('Error initializing default profiles:', initError);
         return defaultProfiles;
       }
     }
@@ -76,7 +77,7 @@ class SupabaseService {
       );
       
     if (error) {
-      console.error('Error initializing default profiles:', error);
+      logger.error('Error initializing default profiles:', error);
       throw error;
     }
   }
@@ -111,10 +112,10 @@ class SupabaseService {
         });
       }
       
-      console.error('Control points data is not an array:', controlPointsJson);
+      logger.error('Control points data is not an array:', controlPointsJson);
       return [];
     } catch (error) {
-      console.error('Error parsing control points:', error);
+      logger.error('Error parsing control points:', error);
       return [];
     }
   }
@@ -137,26 +138,49 @@ class SupabaseService {
       );
       
     if (error) {
-      console.error('Error saving profiles:', error);
+      logger.error('Error saving profiles:', error);
+      throw error;
     }
+  }
+
+  // Helper method to abstract fetching and mapping data
+  private async _fetchAndMap<DbRow extends { id: string }, OutputType>(
+    tableName: keyof Database['public']['Tables'],
+    errorMessagePrefix: string,
+    mapper: (row: DbRow) => OutputType,
+    emptyResultValue: OutputType[] = []
+  ): Promise<OutputType[]> {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*');
+
+    if (error) {
+      logger.error(`${errorMessagePrefix}:`, error);
+      return emptyResultValue;
+    }
+
+    // Using 'any' for casting simplicity, assuming Supabase returns array or null
+    const typedData = data as any[] | null;
+
+    if (!typedData) {
+      logger.error(`${errorMessagePrefix}: No data returned.`);
+      return emptyResultValue;
+    }
+
+    // Use type assertion for the mapper argument
+    return typedData.map(row => mapper(row as DbRow));
   }
 
   // Zone-specific methods
   async getZones(): Promise<HeatZone[]> {
-    const { data, error } = await supabase
-      .from('heat_zones')
-      .select('*');
-      
-    if (error) {
-      console.error('Error fetching zones:', error);
-      return [];
-    }
-    
-    return data.map(zone => ({
+    // Define the specific mapper for zones
+    const mapZone = (zone: any): HeatZone => ({
       id: zone.id,
       name: zone.name,
       description: zone.description || ''
-    }));
+    });
+
+    return this._fetchAndMap('heat_zones', 'Error fetching zones', mapZone);
   }
 
   async createZone(zone: Omit<HeatZone, 'id'>): Promise<HeatZone> {
@@ -172,7 +196,7 @@ class SupabaseService {
       .single();
       
     if (error) {
-      console.error('Error creating zone:', error);
+      logger.error('Error creating zone:', error);
       throw new Error(`Failed to create zone: ${error.message}`);
     }
     
@@ -195,7 +219,8 @@ class SupabaseService {
       );
       
     if (error) {
-      console.error('Error saving zones:', error);
+      logger.error('Error saving zones:', error);
+      throw error;
     }
   }
 
@@ -206,23 +231,15 @@ class SupabaseService {
       .eq('id', id);
       
     if (error) {
-      console.error('Error deleting zone:', error);
+      logger.error('Error deleting zone:', error);
       throw new Error(`Failed to delete zone: ${error.message}`);
     }
   }
 
   // Controller-specific methods
   async getControllers(): Promise<Controller[]> {
-    const { data, error } = await supabase
-      .from('controllers')
-      .select('*');
-      
-    if (error) {
-      console.error('Error fetching controllers:', error);
-      return [];
-    }
-    
-    return data.map(controller => ({
+    // Define the specific mapper for controllers
+    const mapController = (controller: any): Controller => ({
       id: controller.id,
       name: controller.name,
       currentTemp: controller.current_temp,
@@ -235,7 +252,9 @@ class SupabaseService {
       isRunning: controller.is_running,
       lastUpdated: controller.last_updated,
       zoneId: controller.zone_id
-    }));
+    });
+
+    return this._fetchAndMap('controllers', 'Error fetching controllers', mapController);
   }
 
   async saveControllers(controllers: Controller[]): Promise<void> {
@@ -259,7 +278,8 @@ class SupabaseService {
       );
       
     if (error) {
-      console.error('Error saving controllers:', error);
+      logger.error('Error saving controllers:', error);
+      throw error;
     }
   }
   
@@ -270,7 +290,7 @@ class SupabaseService {
       .eq('id', id);
       
     if (error) {
-      console.error('Error deleting controller:', error);
+      logger.error('Error deleting controller:', error);
       throw new Error(`Failed to delete controller: ${error.message}`);
     }
   }

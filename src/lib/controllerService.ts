@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { storageService } from './storageService';
 import { Controller } from './types';
+import { logger } from '@/logger';
 
 // Controller validation schema
 const controllerSchema = z.object({
@@ -129,7 +130,7 @@ export const controllerService = {
     try {
       await storageService.deleteController(id);
     } catch (error) {
-      console.error('Error deleting controller:', error);
+      logger.error('Error deleting controller:', error);
       throw new Error('Failed to delete controller');
     }
   }
