@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { storageService } from './storageService';
 import { Controller } from './types';
@@ -98,16 +97,12 @@ export const controllerService = {
 
   // Create a new controller
   createController: async (data: ControllerInput): Promise<Controller> => {
-    // Validate input data
     const validated = controllerSchema.parse(data);
     
-    // Get existing controllers
     const controllers = await storageService.getControllers();
     
-    // Generate a new UUID
     const newId = crypto.randomUUID();
     
-    // Create new controller
     const newController: Controller = {
       id: newId,
       name: validated.name,
@@ -116,17 +111,28 @@ export const controllerService = {
       targetTemp: validated.targetTemp,
       slaveId: validated.slaveId,
       updateInterval: validated.updateInterval,
-      currentTemp: validated.targetTemp - 5 + Math.random() * 10, // Random start temp near target
+      currentTemp: validated.targetTemp - 5 + Math.random() * 10,
       currentProfile: null,
       isRunning: false,
       lastUpdated: new Date().toISOString(),
       zoneId: validated.zoneId
     };
     
-    // Save updated controllers
     controllers.push(newController);
     await storageService.saveControllers(controllers);
     
     return newController;
+  },
+
+  // Delete a controller
+  deleteController: async (id: string): Promise<void> => {
+    const controllers = await storageService.getControllers();
+    const filteredControllers = controllers.filter(c => c.id !== id);
+    
+    if (filteredControllers.length === controllers.length) {
+      throw new Error('Controller not found');
+    }
+    
+    await storageService.saveControllers(filteredControllers);
   }
 };

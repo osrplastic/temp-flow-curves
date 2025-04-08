@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Trash2 } from 'lucide-react';
 
 // Form schema
 const formSchema = z.object({
@@ -46,13 +46,15 @@ interface EditControllerDialogProps {
   zones: HeatZone[];
   onSubmit: (id: string, data: Partial<Controller>) => void;
   onCancel: () => void;
+  onDelete?: (id: string) => void;
 }
 
 const EditControllerDialog: React.FC<EditControllerDialogProps> = ({ 
   controller, 
   zones, 
   onSubmit, 
-  onCancel 
+  onCancel,
+  onDelete
 }) => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -97,6 +99,12 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
       updateInterval: data.updateInterval,
       zoneId: data.zoneId
     });
+  };
+  
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(controller.id);
+    }
   };
   
   return (
@@ -232,13 +240,28 @@ const EditControllerDialog: React.FC<EditControllerDialogProps> = ({
             />
           </div>
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              Save Changes
-            </Button>
+          <DialogFooter className="flex items-center justify-between">
+            <div>
+              {onDelete && (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={handleDelete}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Controller
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Save Changes
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </Form>

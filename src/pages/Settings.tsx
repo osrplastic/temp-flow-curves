@@ -20,11 +20,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { api } from '@/lib/api';
 
 const Settings = () => {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [deleteControllerId, setDeleteControllerId] = useState<string | null>(null);
   const [refreshRate, setRefreshRate] = useState(1000);
   const [darkMode, setDarkMode] = useState(theme === 'dark');
   const [temperatureUnit, setTemperatureUnit] = useState<'celsius' | 'fahrenheit'>('celsius');
@@ -51,6 +53,28 @@ const Settings = () => {
     });
     
     window.location.reload();
+  };
+
+  const handleDeleteController = async () => {
+    if (deleteControllerId) {
+      try {
+        await api.deleteController(deleteControllerId);
+        
+        toast({
+          title: "Controller Deleted",
+          description: "The controller has been successfully removed",
+          variant: "default"
+        });
+        
+        setDeleteControllerId(null);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete controller",
+          variant: "destructive"
+        });
+      }
+    }
   };
   
   return (
@@ -265,6 +289,26 @@ const Settings = () => {
               className="bg-destructive text-destructive-foreground"
             >
               Reset Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteControllerId} onOpenChange={(open) => !open && setDeleteControllerId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Controller?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this controller. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteController}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete Controller
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

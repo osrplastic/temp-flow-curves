@@ -27,5 +27,6 @@ export const api = {
   updateController: controllerService.updateController,
   startController: controllerService.startController,
   stopController: controllerService.stopController,
-  createController: controllerService.createController
+  createController: controllerService.createController,
+  deleteController: controllerService.deleteController
 };
