@@ -13,7 +13,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import BezierEditor from './BezierEditor';
 import { ControlPoint, TemperatureProfile } from '@/lib/api';
@@ -35,9 +34,9 @@ interface ProfileFormProps {
 }
 
 const defaultControlPoints: ControlPoint[] = [
-  { x: 0, y: 0, type: 'circle' },
-  { x: 0.5, y: 0.5, type: 'circle', handleX: 0.2, handleY: 0.5 },
-  { x: 1, y: 1, type: 'circle' }
+  { x: 0, y: 0 },
+  { x: 0.5, y: 0.5, handleX: 0.2, handleY: 0.5 },
+  { x: 1, y: 1 }
 ];
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ 
@@ -128,11 +127,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             maxTemp={maxTemp}
             className="border rounded-md p-2"
           />
-          <FormDescription className="text-xs text-muted-foreground">
-            Drag points to adjust the temperature curve. Double-click on the curve to add points. 
-            Double-click on existing points to delete them (except first and last points).
-            Select a point to change its style.
-          </FormDescription>
+          <p className="text-xs text-muted-foreground">
+            Drag points to adjust the temperature curve. The first and last points are fixed horizontally.
+          </p>
         </div>
         
         <Button type="submit" className="w-full">

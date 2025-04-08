@@ -3,8 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ControlPoint } from '@/lib/api';
 import { getBezierPath } from '@/lib/bezier';
 import { cn } from '@/lib/utils';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Circle, Square, Triangle } from 'lucide-react';
 
 interface BezierEditorProps {
   controlPoints: ControlPoint[];
@@ -115,9 +113,6 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           x: boundedX,
           y: normalizedCoords.y
         };
-        
-        // Update handles for smooth curves
-        updateHandlesForSmoothCurve(newPoints, activePointIndex);
       }
     } else if (activeHandle === 'handle') {
       // Update handle position
@@ -131,117 +126,10 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     onChange(newPoints);
   };
   
-  // Update handles for smooth curve at the specified point
-  const updateHandlesForSmoothCurve = (points: ControlPoint[], index: number) => {
-    if (index <= 0 || index >= points.length - 1) return;
-    
-    const prev = points[index - 1];
-    const curr = points[index];
-    const next = points[index + 1];
-    
-    // Calculate handle positions for smooth curve
-    const prevDiffX = curr.x - prev.x;
-    const prevDiffY = curr.y - prev.y;
-    const nextDiffX = next.x - curr.x;
-    const nextDiffY = next.y - curr.y;
-    
-    // Handle before current point
-    points[index - 1] = {
-      ...prev,
-      handleX: prev.x + prevDiffX / 3,
-      handleY: prev.y + prevDiffY / 3
-    };
-    
-    // Handle after current point
-    points[index] = {
-      ...curr,
-      handleX: curr.x + nextDiffX / 3,
-      handleY: curr.y + nextDiffY / 3
-    };
-  };
-  
   // Handle mouse up
   const handleMouseUp = () => {
     setActivePointIndex(null);
     setActiveHandle(null);
-  };
-  
-  // Handle double click on curve to add point
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    if (readonly || e.target !== e.currentTarget) return;
-    
-    const svgRect = svgRef.current?.getBoundingClientRect();
-    if (!svgRect) return;
-    
-    const x = e.clientX - svgRect.left;
-    const y = e.clientY - svgRect.top;
-    const { x: normX, y: normY } = toNormalizedCoords(x, y);
-    
-    // Find where to insert the new point
-    let insertIndex = 1;
-    for (let i = 0; i < controlPoints.length - 1; i++) {
-      if (normX >= controlPoints[i].x && normX <= controlPoints[i + 1].x) {
-        insertIndex = i + 1;
-        break;
-      }
-    }
-    
-    // Create the new point
-    const newPoint: ControlPoint = {
-      x: normX,
-      y: normY,
-      type: 'circle' // Default type for new points
-    };
-    
-    // Insert the new point
-    const newPoints = [
-      ...controlPoints.slice(0, insertIndex),
-      newPoint,
-      ...controlPoints.slice(insertIndex)
-    ];
-    
-    // Update handles for smooth curves
-    updateHandlesForSmoothCurve(newPoints, insertIndex);
-    if (insertIndex > 0) {
-      updateHandlesForSmoothCurve(newPoints, insertIndex - 1);
-    }
-    
-    onChange(newPoints);
-  };
-  
-  // Handle double click on control point to delete it
-  const handlePointDoubleClick = (index: number, e: React.MouseEvent) => {
-    if (readonly) return;
-    e.stopPropagation();
-    
-    // Don't allow deleting first or last points
-    if (index === 0 || index === controlPoints.length - 1) return;
-    
-    // Remove the point
-    const newPoints = [
-      ...controlPoints.slice(0, index),
-      ...controlPoints.slice(index + 1)
-    ];
-    
-    // Update handles for smooth curves at the connection
-    if (index > 0 && index < newPoints.length) {
-      updateHandlesForSmoothCurve(newPoints, index - 1);
-    }
-    
-    onChange(newPoints);
-  };
-  
-  // Handle type change for a control point
-  const handlePointTypeChange = (index: number, type: string) => {
-    if (readonly) return;
-    
-    const newPoints = [...controlPoints];
-    newPoints[index] = {
-      ...newPoints[index],
-      type: type as 'circle' | 'square' | 'triangle'
-    };
-    
-    onChange(newPoints);
   };
   
   // Generate the SVG path for the Bezier curve
@@ -309,167 +197,109 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
     return labels;
   };
   
-  // Render a control point based on its type
-  const renderControlPoint = (point: ControlPoint, index: number) => {
-    const svgPoint = toSvgCoords(point);
-    const pointType = point.type || 'circle'; // Default to circle if not specified
-    
-    // Shared props for all point types
-    const sharedProps = {
-      className: cn(
-        "fill-primary stroke-background stroke-1",
-        !readonly && "cursor-move"
-      ),
-      onMouseDown: (e: React.MouseEvent) => handlePointMouseDown(index, e),
-      onDoubleClick: (e: React.MouseEvent) => handlePointDoubleClick(index, e)
-    };
-    
-    switch (pointType) {
-      case 'square':
-        return (
-          <rect
-            x={svgPoint.x - 5}
-            y={svgPoint.y - 5}
-            width={10}
-            height={10}
-            {...sharedProps}
-          />
-        );
-      case 'triangle':
-        const trianglePoints = `${svgPoint.x},${svgPoint.y - 6} ${svgPoint.x + 6},${svgPoint.y + 3} ${svgPoint.x - 6},${svgPoint.y + 3}`;
-        return (
-          <polygon
-            points={trianglePoints}
-            {...sharedProps}
-          />
-        );
-      case 'circle':
-      default:
-        return (
-          <circle
-            cx={svgPoint.x}
-            cy={svgPoint.y}
-            r={5}
-            {...sharedProps}
-          />
-        );
-    }
-  };
-  
   return (
-    <div className="space-y-2">
-      {!readonly && activePointIndex !== null && (
-        <div className="mb-2 flex items-center gap-2 p-1 border rounded-md bg-background">
-          <span className="text-xs text-muted-foreground">Point Style:</span>
-          <ToggleGroup type="single" value={controlPoints[activePointIndex]?.type || 'circle'} onValueChange={(value) => value && handlePointTypeChange(activePointIndex, value)}>
-            <ToggleGroupItem value="circle" aria-label="Circle" size="sm">
-              <Circle className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="square" aria-label="Square" size="sm">
-              <Square className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="triangle" aria-label="Triangle" size="sm">
-              <Triangle className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      )}
+    <svg
+      ref={svgRef}
+      className={cn("w-full h-64 touch-none", className)}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
+      {/* Grid lines */}
+      {[0.2, 0.4, 0.6, 0.8].map(y => {
+        const { y: svgY } = toSvgCoords({ x: 0, y });
+        return (
+          <line
+            key={`grid-y-${y}`}
+            x1={0}
+            y1={svgY}
+            x2={svgDimensions.width}
+            y2={svgY}
+            className="stroke-muted/20 stroke-dasharray-2"
+          />
+        );
+      })}
       
-      <svg
-        ref={svgRef}
-        className={cn("w-full h-64 touch-none", className)}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-      >
-        {/* Grid lines */}
-        {[0.2, 0.4, 0.6, 0.8].map(y => {
-          const { y: svgY } = toSvgCoords({ x: 0, y });
-          return (
-            <line
-              key={`grid-y-${y}`}
-              x1={0}
-              y1={svgY}
-              x2={svgDimensions.width}
-              y2={svgY}
-              className="stroke-muted/20 stroke-dasharray-2"
-            />
-          );
-        })}
+      {[0.2, 0.4, 0.6, 0.8].map(x => {
+        const { x: svgX } = toSvgCoords({ x, y: 0 });
+        return (
+          <line
+            key={`grid-x-${x}`}
+            x1={svgX}
+            y1={0}
+            x2={svgX}
+            y2={svgDimensions.height}
+            className="stroke-muted/20 stroke-dasharray-2"
+          />
+        );
+      })}
+      
+      {/* Bezier curve */}
+      <path d={pathData} className="bezier-curve-path" />
+      
+      {/* Control points and handles */}
+      {controlPoints.map((point, index) => {
+        const svgPoint = toSvgCoords(point);
         
-        {[0.2, 0.4, 0.6, 0.8].map(x => {
-          const { x: svgX } = toSvgCoords({ x, y: 0 });
-          return (
-            <line
-              key={`grid-x-${x}`}
-              x1={svgX}
-              y1={0}
-              x2={svgX}
-              y2={svgDimensions.height}
-              className="stroke-muted/20 stroke-dasharray-2"
-            />
-          );
-        })}
+        // Default handle positions if not specified
+        const nextPoint = index < controlPoints.length - 1 ? controlPoints[index + 1] : null;
         
-        {/* Bezier curve */}
-        <path d={pathData} className="bezier-curve-path" />
+        const handleX = point.handleX !== undefined 
+          ? point.handleX 
+          : (nextPoint ? point.x + (nextPoint.x - point.x) / 3 : point.x + 0.1);
         
-        {/* Control points and handles */}
-        {controlPoints.map((point, index) => {
-          const svgPoint = toSvgCoords(point);
-          
-          // Default handle positions if not specified
-          const nextPoint = index < controlPoints.length - 1 ? controlPoints[index + 1] : null;
-          
-          const handleX = point.handleX !== undefined 
-            ? point.handleX 
-            : (nextPoint ? point.x + (nextPoint.x - point.x) / 3 : point.x + 0.1);
-          
-          const handleY = point.handleY !== undefined 
-            ? point.handleY 
-            : (nextPoint ? point.y + (nextPoint.y - point.y) / 3 : point.y);
-          
-          const svgHandle = toSvgCoords({ x: handleX, y: handleY });
-          
-          return (
-            <React.Fragment key={`control-${index}`}>
-              {/* Control point */}
-              {renderControlPoint(point, index)}
-              
-              {/* Handle line and point (not for last point) */}
-              {index < controlPoints.length - 1 && !readonly && (
-                <>
-                  <line
-                    x1={svgPoint.x}
-                    y1={svgPoint.y}
-                    x2={svgHandle.x}
-                    y2={svgHandle.y}
-                    className="bezier-control-line"
-                  />
-                  <circle
-                    cx={svgHandle.x}
-                    cy={svgHandle.y}
-                    r={3}
-                    className={cn(
-                      "fill-accent stroke-primary stroke-1",
-                      !readonly && "cursor-move"
-                    )}
-                    onMouseDown={(e) => handleHandleMouseDown(index, e)}
-                  />
-                </>
+        const handleY = point.handleY !== undefined 
+          ? point.handleY 
+          : (nextPoint ? point.y + (nextPoint.y - point.y) / 3 : point.y);
+        
+        const svgHandle = toSvgCoords({ x: handleX, y: handleY });
+        
+        return (
+          <React.Fragment key={`control-${index}`}>
+            {/* Control point */}
+            <circle
+              cx={svgPoint.x}
+              cy={svgPoint.y}
+              r={5}
+              className={cn(
+                "fill-primary stroke-background stroke-1",
+                !readonly && "cursor-move"
               )}
-            </React.Fragment>
-          );
-        })}
-        
-        {/* Temperature labels */}
-        {renderTempLabels()}
-        
-        {/* Time labels */}
-        {renderTimeLabels()}
-      </svg>
-    </div>
+              onMouseDown={(e) => handlePointMouseDown(index, e)}
+            />
+            
+            {/* Handle line and point (not for last point) */}
+            {index < controlPoints.length - 1 && !readonly && (
+              <>
+                <line
+                  x1={svgPoint.x}
+                  y1={svgPoint.y}
+                  x2={svgHandle.x}
+                  y2={svgHandle.y}
+                  className="bezier-control-line"
+                />
+                <circle
+                  cx={svgHandle.x}
+                  cy={svgHandle.y}
+                  r={3}
+                  className={cn(
+                    "fill-accent stroke-primary stroke-1",
+                    !readonly && "cursor-move"
+                  )}
+                  onMouseDown={(e) => handleHandleMouseDown(index, e)}
+                />
+              </>
+            )}
+          </React.Fragment>
+        );
+      })}
+      
+      {/* Temperature labels */}
+      {renderTempLabels()}
+      
+      {/* Time labels */}
+      {renderTimeLabels()}
+    </svg>
   );
 };
 
