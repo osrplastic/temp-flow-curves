@@ -6,7 +6,7 @@ export const toSvgCoords = (
   point: { x: number; y: number },
   svgDimensions: { width: number; height: number }
 ) => {
-  const paddingX = 25;
+  const paddingX = 30;
   const paddingY = 20;
   const usableWidth = svgDimensions.width - paddingX * 2;
   const usableHeight = svgDimensions.height - paddingY * 2;
@@ -23,7 +23,7 @@ export const toNormalizedCoords = (
   y: number, 
   svgDimensions: { width: number; height: number }
 ) => {
-  const paddingX = 25;
+  const paddingX = 30;
   const paddingY = 20;
   const usableWidth = svgDimensions.width - paddingX * 2;
   const usableHeight = svgDimensions.height - paddingY * 2;
@@ -44,8 +44,13 @@ export const toPathCoords = (
   point: { x: number; y: number },
   svgDimensions: { width: number; height: number }
 ) => {
+  const paddingX = 30;
+  const paddingY = 20;
+  const usableWidth = svgDimensions.width - paddingX * 2;
+  const usableHeight = svgDimensions.height - paddingY * 2;
+  
   return {
-    x: point.x * svgDimensions.width,
-    y: (1 - point.y) * svgDimensions.height
+    x: paddingX + (point.x * usableWidth),
+    y: paddingY + ((1 - point.y) * usableHeight)
   };
 };

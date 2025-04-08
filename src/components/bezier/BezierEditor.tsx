@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ControlPoint } from '@/lib/api';
 import { getBezierPath } from '@/lib/bezier';
@@ -299,15 +300,15 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   };
   
   const pathPoints = getBezierPath(controlPoints);
-  let pathData = '';
   
+  // Generate the SVG path data
+  let pathData = '';
   if (pathPoints.length > 0) {
-    const firstPoint = toPathCoords(pathPoints[0], svgDimensions);
-    pathData = `M ${firstPoint.x} ${firstPoint.y}`;
+    const svgPoints = pathPoints.map(point => toPathCoords(point, svgDimensions));
+    pathData = `M ${svgPoints[0].x},${svgPoints[0].y}`;
     
-    for (let i = 1; i < pathPoints.length; i++) {
-      const point = toPathCoords(pathPoints[i], svgDimensions);
-      pathData += ` L ${point.x} ${point.y}`;
+    for (let i = 1; i < svgPoints.length; i++) {
+      pathData += ` L ${svgPoints[i].x},${svgPoints[i].y}`;
     }
   }
   

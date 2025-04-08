@@ -20,7 +20,7 @@ const BezierGrid: React.FC<BezierGridProps> = ({
     for (let i = 0; i <= steps; i++) {
       const y = i / steps;
       const temp = minTemp + (maxTemp - minTemp) * (1 - y);
-      const svgCoords = toSvgCoords({ x: 0, y: 1 - y }, svgDimensions);
+      const svgCoords = toSvgCoords({ x: 0, y }, svgDimensions);
       
       labels.push(
         <text
@@ -72,7 +72,7 @@ const BezierGrid: React.FC<BezierGridProps> = ({
           key={`grid-y-${y}`}
           x1={25}
           y1={svgY}
-          x2={svgDimensions.width}
+          x2={svgDimensions.width - 10}
           y2={svgY}
           className="stroke-muted/20 stroke-dasharray-2"
         />
@@ -85,7 +85,7 @@ const BezierGrid: React.FC<BezierGridProps> = ({
         <line
           key={`grid-x-${x}`}
           x1={svgX}
-          y1={0}
+          y1={20}
           x2={svgX}
           y2={svgDimensions.height - 20}
           className="stroke-muted/20 stroke-dasharray-2"
