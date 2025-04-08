@@ -11,6 +11,10 @@ class ControllerStorage {
   async saveControllers(controllers: Controller[]): Promise<void> {
     return supabaseService.saveControllers(controllers);
   }
+  
+  async deleteController(id: string): Promise<void> {
+    return supabaseService.deleteController(id);
+  }
 }
 
 export const controllerStorage = new ControllerStorage();

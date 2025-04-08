@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { storageService } from './storageService';
 import { Controller } from './types';
@@ -127,13 +126,11 @@ export const controllerService = {
 
   // Delete a controller
   deleteController: async (id: string): Promise<void> => {
-    const controllers = await storageService.getControllers();
-    const filteredControllers = controllers.filter(c => c.id !== id);
-    
-    if (filteredControllers.length === controllers.length) {
-      throw new Error('Controller not found');
+    try {
+      await storageService.deleteController(id);
+    } catch (error) {
+      console.error('Error deleting controller:', error);
+      throw new Error('Failed to delete controller');
     }
-    
-    await storageService.saveControllers(filteredControllers);
   }
 };

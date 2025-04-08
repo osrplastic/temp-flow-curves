@@ -23,6 +23,10 @@ class StorageService {
   async saveControllers(controllers: Controller[]): Promise<void> {
     return controllerStorage.saveControllers(controllers);
   }
+  
+  async deleteController(id: string): Promise<void> {
+    return controllerStorage.deleteController(id);
+  }
 
   // Zone-specific methods
   async getZones(): Promise<HeatZone[]> {

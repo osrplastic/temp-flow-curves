@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TemperatureProfile, HeatZone, Controller, ControlPoint } from './types';
 import type { Database } from '@/integrations/supabase/types';
@@ -171,6 +170,18 @@ class SupabaseService {
       
     if (error) {
       console.error('Error saving controllers:', error);
+    }
+  }
+  
+  async deleteController(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('controllers')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error deleting controller:', error);
+      throw new Error(`Failed to delete controller: ${error.message}`);
     }
   }
 }
