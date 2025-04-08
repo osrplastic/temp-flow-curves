@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
@@ -12,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Play, Thermometer, Clock, Square } from 'lucide-react';
+import { ChevronDown, Play, Thermometer, Clock, Square, Timer } from 'lucide-react';
 
 interface ZoneMasterControlProps {
   zone: HeatZone;
@@ -185,25 +186,32 @@ const ZoneMasterControl: React.FC<ZoneMasterControlProps> = ({
       <CardContent className="space-y-4 p-4">
         {isZoneActive && (
           <div className="space-y-2 bg-secondary/30 rounded-md px-3 py-2 mb-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                {activeProfileName && (
-                  <span className="text-muted-foreground">
-                    {activeProfileName}
-                  </span>
-                )}
+            {activeProfileName && (
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Play className="h-3.5 w-3.5 text-primary" />
+                <span className="text-sm font-medium">{activeProfileName}</span>
               </div>
-              <div className="font-mono">
-                <span className="text-muted-foreground">Time: </span>
-                <span>{formatTime(elapsedTime)}</span>
-                <span className="mx-1 text-muted-foreground">/</span>
-                <span className="text-muted-foreground">Remaining: </span>
-                <span>{formatTime(remainingTime)}</span>
+            )}
+            
+            <div className="flex flex-col gap-1 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Time:</span>
+                </div>
+                <span className="font-mono">{formatTime(elapsedTime)}</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground">Remaining:</span>
+                </div>
+                <span className="font-mono">{formatTime(remainingTime)}</span>
               </div>
             </div>
             
-            <Progress value={progressPercentage} className="h-2" />
+            <Progress value={progressPercentage} className="h-1.5 mt-1" />
           </div>
         )}
       
