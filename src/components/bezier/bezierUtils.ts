@@ -8,12 +8,12 @@ export const toSvgCoords = (
 ) => {
   const paddingX = 25;
   const paddingY = 20;
-  const usableWidth = svgDimensions.width - paddingX;
-  const usableHeight = svgDimensions.height - paddingY;
+  const usableWidth = svgDimensions.width - paddingX * 2;
+  const usableHeight = svgDimensions.height - paddingY * 2;
   
   return {
     x: paddingX + (point.x * usableWidth),
-    y: (1 - point.y) * usableHeight
+    y: paddingY + ((1 - point.y) * usableHeight)
   };
 };
 
@@ -25,12 +25,12 @@ export const toNormalizedCoords = (
 ) => {
   const paddingX = 25;
   const paddingY = 20;
-  const usableWidth = svgDimensions.width - paddingX;
-  const usableHeight = svgDimensions.height - paddingY;
+  const usableWidth = svgDimensions.width - paddingX * 2;
+  const usableHeight = svgDimensions.height - paddingY * 2;
   
   return {
     x: Math.max(0, Math.min(1, (x - paddingX) / usableWidth)),
-    y: Math.max(0, Math.min(1, 1 - (y / usableHeight)))
+    y: Math.max(0, Math.min(1, 1 - ((y - paddingY) / usableHeight)))
   };
 };
 

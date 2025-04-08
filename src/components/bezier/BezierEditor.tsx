@@ -303,12 +303,10 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
   let pathData = '';
   
   if (pathPoints.length > 0) {
-    const startPoint = toNormalizedCoords(pathPoints[0].x, pathPoints[0].y, svgDimensions);
-    pathData = `M ${startPoint.x} ${startPoint.y}`;
+    pathData = `M ${pathPoints[0].x * svgDimensions.width} ${(1 - pathPoints[0].y) * svgDimensions.height}`;
     
     for (let i = 1; i < pathPoints.length; i++) {
-      const point = toNormalizedCoords(pathPoints[i].x, pathPoints[i].y, svgDimensions);
-      pathData += ` L ${point.x} ${point.y}`;
+      pathData += ` L ${pathPoints[i].x * svgDimensions.width} ${(1 - pathPoints[i].y) * svgDimensions.height}`;
     }
   }
   
@@ -344,7 +342,14 @@ const BezierEditor: React.FC<BezierEditorProps> = ({
           maxTemp={maxTemp}
         />
         
-        <path d={pathData} className="bezier-curve-path" />
+        <path 
+          d={pathData} 
+          stroke="hsl(var(--primary))" 
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
         
         <ControlPoints
           controlPoints={controlPoints}
